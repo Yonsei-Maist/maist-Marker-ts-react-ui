@@ -1,0 +1,61 @@
+{
+  "name": "@yonsei-maist/react-maist-marker",
+  "version": "0.3.0",
+  "description": "",
+  "main": "dist/components/index.js",
+  "types": "dist/components/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "storybook": "start-storybook -p 6006",
+    "build-storybook": "build-storybook",
+    "build": "rm -rf ./dist && babel src --out-dir dist --extensions \".ts,.tsx\" --source-maps inline && copyfiles -u 1 src/**/image/* dist/ && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yonsei-Maist/maist-Marker-ts-react-ui.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "keywords": [
+    "ol",
+    "marker",
+    "maist"
+  ],
+  "author": "arknell@yonsei.ac.kr",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Yonsei-Maist/maist-Marker-ts-react-ui/issues"
+  },
+  "homepage": "https://github.com/Yonsei-Maist/maist-Marker-ts-react-ui#readme",
+  "peerDependencies": {
+    "@emotion/styled": "^11.0.0",
+    "@types/react": "^17.0.0 || ^18.0.0",
+    "@types/react-dom": "^17.0.0 || ^18.0.0",
+    "react": "^17.0.0 || ^18.0.0",
+    "react-dom": "^17.0.0 || ^18.0.0"
+  },
+  "dependencies": {
+    "axios": "^0.27.2",
+    "grunt": "^1.5.3",
+    "ol": "^6.14.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.17.10",
+    "@babel/core": "^7.17.12",
+    "@babel/plugin-transform-classes": "^7.17.12",
+    "@babel/plugin-transform-function-name": "^7.16.7",
+    "@babel/preset-env": "^7.17.12",
+    "@babel/preset-react": "^7.17.12",
+    "@babel/preset-typescript": "^7.17.12",
+    "@storybook/addon-actions": "^6.5.0",
+    "@storybook/addon-essentials": "^6.5.0",
+    "@storybook/addon-interactions": "^6.5.0",
+    "@storybook/addon-links": "^6.5.0",
+    "@storybook/builder-webpack4": "^6.5.0",
+    "@storybook/manager-webpack4": "^6.5.0",
+    "@storybook/react": "^6.5.0",
+    "@storybook/testing-library": "^0.0.11",
+    "babel-loader": "^8.2.5"
+  }
+}
