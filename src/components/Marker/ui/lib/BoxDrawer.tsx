@@ -79,7 +79,7 @@ class BoxDrawer extends BasicDrawer {
                     }
                 });
 
-                return defaultStyle(feature, 0);
+                return defaultStyle ? defaultStyle(feature, 0) : undefined;
             },
             features: select.getFeatures()
         });

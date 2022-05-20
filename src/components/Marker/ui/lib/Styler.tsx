@@ -100,7 +100,7 @@ export function measureStyleFunciton(feature: RenderFeature | Feature, formatLab
         label = formatLabel(measuredValue);
     }
 
-    if (label) {
+    if (label && point) {
         labelStyle.setGeometry(point);
         labelStyle.getText().setText(label);
         styles.push(labelStyle);

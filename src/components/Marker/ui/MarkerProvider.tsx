@@ -2,14 +2,12 @@ import { Feature, Map, View } from 'ol';
 import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
 import dziReader, { makeLayer } from "../../../api/DziReader";
 
-import 'ol/ol.css';
 import { defaults } from 'ol/control';
 import { Tile } from 'ol/layer';
 import { Zoomify } from 'ol/source';
 
-import MapContext, {MapObject} from '../context/MapContext';
-import LabelContext, { LabelContextObject, LabelObject } from '../context/LabelContext';
-import { SimpleGeometry } from 'ol/geom';
+import MapContext, { MapObject } from '../context/MapContext';
+import {LabelContext, LabelContextObject, LabelObject } from '../context';
 
 export interface MapProviderState {
     labelList: LabelObject[]
@@ -93,9 +91,17 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
             let map = mapObj.map;
             map?.addLayer(layer);
 
+            let sourceTmp = layer.getSource();
+            let resolution : number[] | undefined = undefined;
+            if (sourceTmp) {
+                let tileGrid = sourceTmp.getTileGrid();
+                if (tileGrid)
+                    resolution = tileGrid.getResolutions();
+            }
+
             map?.setView(
                 new View({
-                    resolutions: layer.getSource().getTileGrid().getResolutions(),
+                    resolutions: resolution,
                     extent: layer.getExtent(),
                     constrainOnlyCenter: true
                 })

@@ -3,15 +3,15 @@
  * @author Chanwoo Gwon, Yonsei Univ. Researcher, since 2020.05. ~
  * @Date 2021.10.27
  */
-import React, { forwardRef, MutableRefObject, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import MapProvider from './MarkerProvider';
+import React, { Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import MapProvider, { MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_MEMO, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
 
 import styled from '@emotion/styled';
 
-import { LabelObject } from '../context/LabelContext';
+import { LabelObject } from '../context';
 import SimpleGeometry from 'ol/geom/SimpleGeometry';
 import { Feature } from 'ol';
 
@@ -42,8 +42,8 @@ export interface MarkerProps extends ToolNavigatorProps {
 };
 
 function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, areaFormat, labelInfo, labelNameList }: MarkerProps, ref:Ref<MarkerState>) {
-    const providerState = useRef(null);
-    const [option, setOption] = useState(undefined as ToolOption);
+    const providerState = useRef(null as MapProviderState | null);
+    const [option, setOption] = useState(undefined as ToolOption | undefined);
 
     useEffect(() => {
         if (toolTypes) {
@@ -75,17 +75,30 @@ function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, area
 
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
-            let labelList = [];
-            for (let i =0;i <providerState.current.labelList.length;i++) {
-                let item = providerState.current.labelList[i] as LabelObject;
-                labelList.push({
-                    location: (item.feature as Feature<SimpleGeometry>).getGeometry().getCoordinates(),
-                    memo: item.feature.get(TOOL_MEMO),
-                    toolType: item.feature.get(TOOL_TYPE),
-                    name: item.labelInfo.labelName
-                } as LabelInfo)
+            if (providerState.current) {
+
+                let labelList = [];
+                for (let i =0;i <providerState.current.labelList.length;i++) {
+                    let item = providerState.current.labelList[i] as LabelObject;
+                    let feature = item.feature as Feature<SimpleGeometry>;
+                    let coordinates = null;
+                    if (feature) {
+                        let geometry = feature.getGeometry();
+                        if (geometry) 
+                            coordinates = geometry.getCoordinates();
+                    }
+
+                    let info = item.labelInfo;
+
+                    labelList.push({
+                        location: coordinates,
+                        memo: item.feature.get(TOOL_MEMO),
+                        toolType: item.feature.get(TOOL_TYPE),
+                        name: info ? info.labelName: ""
+                    } as LabelInfo)
+                }
+                return labelList;
             }
-            return labelList;
         }
     } as MarkerState))
 
@@ -111,5 +124,10 @@ RefMarker.defaultProps = {
     width: '100%',
     height: '100%'
 };
+
+export {
+    Tools,
+    ToolOption
+}
 
 export default RefMarker;

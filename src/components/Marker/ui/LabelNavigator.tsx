@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import LabelContext, { LabelInformation } from '../context/LabelContext';
+import { LabelContext, LabelInformation } from '../context';
 import { TOOL_TYPE } from './ToolNavigator';
 
 import styled from '@emotion/styled';
@@ -32,14 +32,14 @@ const MarkerLabelBtnDelete = styled.div`
     right: 0px;
     width: 15px;
     height: 15px;
-    background: url('../image/marker-delete-btn-icon.png') no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAHdJREFUeNpiYBhpgJEYRf///3cAUg5EmnmAkZHxACFFLEQaBrK0ngQPUc1iGHAkIL+f7KAGBut/msQpECDzmQYqcQ2YxdjiuHHA8hgo+/ynHnAYVEE9avGoxaMWj1o8avGoxaMWD86mDwg8oGIT6AHDKAACgAADAEn7XKzhzwlCAAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
 
     &: hover {
         color: #a1a1a1;
         width: 15px;
         height: 15px;
-        background: url('../image/marker-delete-btn-icon-hover.png') no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAeCAYAAAA7MK6iAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAHlJREFUeNpiYBhpgJEYRQsXLnQAUg5EmnkgPj7+ACFFLEQaBrK0ngQPUc1iGHAkIL+f7KAGBut/WsQpMPhR7GIaqMQ1YBZji+PGActO0Oyzn0p2OGLLXiMvjkctHrV41OJRi0ctHrV41GKCzdsHVGwCPWAYBUAAEGAAanATe+3o1CEAAAAASUVORK5CYII=') no-repeat;
         background-size: contain;
     }
 `

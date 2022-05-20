@@ -9,3 +9,4 @@ package-lock.json
 config-overrides.js
 tsconfig.json
 storybook-static
+@types

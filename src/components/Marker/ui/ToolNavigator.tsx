@@ -1,22 +1,21 @@
-import { useEffect, useContext, useRef, useState } from 'react';
-import { Draw, Modify, Snap, Translate, Select, Interaction } from 'ol/interaction';
+
+import React , { useEffect, useContext, useRef, useState } from 'react';
+import { Modify, Snap, Translate, Select } from 'ol/interaction';
 import { Circle, Fill, Stroke, Style } from 'ol/style';
 import { Vector } from 'ol/source';
 import { Vector as VectorLayer } from 'ol/layer'
 
 import MapContext, { MapObject } from '../context/MapContext';
 import Geometry from 'ol/geom/Geometry';
-import { DrawEvent, createBox } from 'ol/interaction/Draw';
+import { DrawEvent } from 'ol/interaction/Draw';
 import {
-    always,
-    never,
     platformModifierKeyOnly,
     primaryAction,
 } from 'ol/events/condition';
 import { Feature } from 'ol';
-import LabelContext, { LabelContextObject, LabelInformation, LabelObject } from '../context/LabelContext';
+import {LabelContext, LabelContextObject, LabelObject } from '../context';
 import Polygon from 'ol/geom/Polygon';
-import { MultiPoint, Point, SimpleGeometry } from 'ol/geom';
+import { MultiPoint, Point } from 'ol/geom';
 
 import {v4 as uuidv4} from 'uuid';
 import BasicDrawer from './lib/BasicDrawer';
@@ -30,18 +29,6 @@ import { measureStyleFunciton } from './lib/Styler';
 import { LabelInfo } from './Marker';
 
 import styled from '@emotion/styled';
-
-import MarkerMoveBtnIcon from '../image/marker-move-btn-icon.png';
-import MarkerMoveBtnIconSelected from '../image/marker-move-btn-icon-selected.png';
-
-import MarkerBoxBtnIcon from '../image/marker-box-btn-icon.png';
-import MarkerBoxBtnIconSelected from '../image/marker-box-btn-icon-selected.png';
-import MarkerPolygonBtnIcon from '../image/marker-polygon-btn-icon.png';
-import MarkerPolygonBtnIconSelected from '../image/marker-polygon-btn-icon-selected.png';
-import MarkerLengthBtnIcon from '../image/marker-length-btn-icon.png';
-import MarkerLengthBtnIconSelected from '../image/marker-length-btn-icon-selected.png';
-import MarkerAreaBtnIcon from '../image/marker-area-btn-icon.png';
-import MarkerAreaBtnIconSelected from '../image/marker-area-btn-icon-selected.png';
 
 const ToolNavigatorStyled = styled.div`
     width: 40px;
@@ -63,19 +50,19 @@ const ToolButton = styled.div`
 `
 
 const ToolButtonSelectMode = styled(ToolButton)`
-    background: url(${MarkerMoveBtnIcon}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAWpJREFUeNrs2gEOgiAUBmBpHcCjeIPqJh7Fm1AnMU+QR+kGxJw1s0R4gjx4799Ya7nki4aIryg4HA6HsxylVKnbQzdJCfuOpITNF23A5oe2wOaDdsCmjwZg00VvwKaH9oANihYBwI1+ORkOOc/e3w3H3oQQV9Rgix9EfXVAZ8/zH6gtbRnMYAZ/Jp864qWv3vuEUrcWOktPA/yOdrfFyYhVCMDhV2QTLBZwOPQMiwnsH/0Hiw3sD72AxQi2Qh/WsPol2uUHkBo80oaRTSGSEtaIXvpLVxmsIisX8EW3PmFsPxq8btVgnKXV2OfSeZYWQjwTHOlhZMe+u1+WEkOvYq1uDxNBW2Gt74eRo62xThsASNFOWOcdD2RoZyxoi2eC7iJiOwh26H+E/SjeiGcwgxkMzjHApNQU5selPzcCho+9Py4NMQujfiCOFU2qzoNUJQ+pWi1S1Xik6i1JVdSSqpnOH8vhcDhb8xJgADLTR7b09EuOAAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #404040;
 
     &: hover {
-        background: url(${MarkerMoveBtnIconSelected}) no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAaxJREFUeNrs2otNwzAQBuDEZgBGYIRsgDsBIzRswghsgBmBCXA3yAgZgQ3gKqWoVNTxubqzz7lfiqJKaZyveZ1dd51Go9EISs/doHPuHlafsEwhhGfu9m0h7HBcHiDzPH80Cb7AnsKOtgWxRdC2MJYdbSvAsqJtJVg2tK0Iy4K2lWHJ0T0B+AVWj7FNLj6HyLbvUJx46ZXW9x9tCKzHYLZWSytYwQr+ffiMpQ76lrZNZoNvsNoXPFH75RjowUtDYwVX55iDNkKx2WgjGJuFNsKxaLRpAItCm0awyei+Iex5/LUhYNsgNtqfvnZJD538DJh7eAfLJBg7LQbUPbw2VAO3SdiVGACAfRyPy8WwsN8v1FN6+YK0Mx3Frr6WhKFXsUmFhxB0Eja5tKwcnYxFdR4qRaOw6O5hZWg0NmsA4Ax9KIg95GCj72Gq6EA8cxSs4Mayub9L7wh+xFdYnhB9ahcZtfDVn+HEruVaPNUsPbJ34A1oTzklkfSln4H21PMvyascBNpzTDZlKesS0J5rZi1bHRtBe85pxKyF+z9ozz1nenMTxDUajUZUfgQYAI2j5pLNG34BAAAAAElFTkSuQmCC') no-repeat;
         background-size: contain;
         background-color: #d4d3d3;
     }
 `
 
 const ToolButtonSelectModeSelected = styled(ToolButton)`
-    background: url(${MarkerMoveBtnIconSelected}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAaxJREFUeNrs2otNwzAQBuDEZgBGYIRsgDsBIzRswghsgBmBCXA3yAgZgQ3gKqWoVNTxubqzz7lfiqJKaZyveZ1dd51Go9EISs/doHPuHlafsEwhhGfu9m0h7HBcHiDzPH80Cb7AnsKOtgWxRdC2MJYdbSvAsqJtJVg2tK0Iy4K2lWHJ0T0B+AVWj7FNLj6HyLbvUJx46ZXW9x9tCKzHYLZWSytYwQr+ffiMpQ76lrZNZoNvsNoXPFH75RjowUtDYwVX55iDNkKx2WgjGJuFNsKxaLRpAItCm0awyei+Iex5/LUhYNsgNtqfvnZJD538DJh7eAfLJBg7LQbUPbw2VAO3SdiVGACAfRyPy8WwsN8v1FN6+YK0Mx3Frr6WhKFXsUmFhxB0Eja5tKwcnYxFdR4qRaOw6O5hZWg0NmsA4Ax9KIg95GCj72Gq6EA8cxSs4Mayub9L7wh+xFdYnhB9ahcZtfDVn+HEruVaPNUsPbJ34A1oTzklkfSln4H21PMvyascBNpzTDZlKesS0J5rZi1bHRtBe85pxKyF+z9ozz1nenMTxDUajUZUfgQYAI2j5pLNG34BAAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #FFFFFF;
 `
@@ -89,73 +76,73 @@ const ToolButtonPencilSelected = styled(ToolButton)`
 `
 
 const ToolButtonBox = styled(ToolButton)`
-    background: url(${MarkerBoxBtnIcon}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAIVJREFUeNrs2kEKgCAQQFGNLtbJqpPVzaYDFBkFUfr+Ulz4YNxNSpIkSS+Vjw4jYqkCl/NwFRyVgHe+rrWR7i/cmX9mGu/84Tgbiy9XentzIw0MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM3EbFlYeImGoC2+JpdaTXJEmSpGdtAgwAQH0ZlBC2LH8AAAAASUVORK5CYII=') no-repeat;
     background-size: contain;
     background-color: #404040;
 
     &: hover {
-        background: url(${MarkerBoxBtnIconSelected}) no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKpJREFUeNrs2rENgzAQQNEjomEHWvZwdmBM7xDvQcsOLhPRRVGgSKRIOO+XxoUfvtIRkiRJP6p7t5hSurWAK6VcX9f6nb2p1Ru+/NtI90cfx3GMeZ5PBco5x7qun4GHYYhpmk4F3s5spIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBPXl4rtYay7KcCrSd+ai9Z0v3Fm6zlNIZ6b2fE5IkSfquhwADAPopGF2Co3RSAAAAAElFTkSuQmCC') no-repeat;
         background-size: contain;
         background-color: #d4d3d3;
     }
 `
 
 const ToolButtonBoxSelected = styled(ToolButtonBox)`
-    background: url(${MarkerBoxBtnIconSelected}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAKpJREFUeNrs2rENgzAQQNEjomEHWvZwdmBM7xDvQcsOLhPRRVGgSKRIOO+XxoUfvtIRkiRJP6p7t5hSurWAK6VcX9f6nb2p1Ru+/NtI90cfx3GMeZ5PBco5x7qun4GHYYhpmk4F3s5spIGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBPXl4rtYay7KcCrSd+ai9Z0v3Fm6zlNIZ6b2fE5IkSfquhwADAPopGF2Co3RSAAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #FFFFFF;
 `
 
 const ToolButtonPolygon = styled(ToolButton)`
-    background: url(${MarkerPolygonBtnIcon}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAa9JREFUeNrsWottwjAQtSsG6AjeoHQDRsgIdINsUDIBIzACbMAIUScIG6QbpBfJqiILROTPu5C7J1mJkPC7s89+54uNUSgUCoVCwQWbo5NhGE70cIVtvVlrv9hHjJzdDzjsWWeYDHinRwuY3f9ZpvZJM/0b28Em0YA6cPZC7Sezkx/UKv/uPOeBI5RdEG5dQa4u4HIcDp8DI3YFuXYB1xntbGjAFcB5RQ3wPfIWHWJ3llDLJUNH4EAfc8vUUxmi1k8Iey9NKIex/PAR5owwtjXEtYew7pJolWDXQXQesIhMB5XpUUd10PHBLASjLYFtdW4Z6JAyNNO+LptMjQd7bhmKkKlTbEdbdL6cUUG2Ly1DxWWK/lBlCROs0+Hyq2JlqF+CDM2Uqacb7JtZMWbXvsSFtLhNS6QsiUs8RKaW4g4PIo+HIgsA4ko8D0Jo3UU8TySnTPtAptZdiIeP8FIiTNTHNNguuTSVEPVBvHimUzDTi77UYq29EXFDr9/+J+dHvsSllqmDzcgdbXeqTJgXu7aUVNPyxA1wJTUpzibP8LRQYKRcPVQoFAqFQhGNPwEGAF2K3IDfSJebAAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #404040;
 
     &: hover {
-        background: url(${MarkerPolygonBtnIconSelected}) no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA3lJREFUeNrsWj2v2jAUNbwOfQwIiRGGdGDmdWMMKyxIsCLBPyC/oOUXwNoJJFZQ3wLdgJGtMDM0AysSXeCN9aV25GcFkpjEtvR8JBTM4HuOb7jHXwgZGBgYGBgYqEIqjk5s2x7hh5UwV3e9XneVC8ZiO/gxkpSgLhY9ViYYi83hx28J2fWyjD9fseiTaAefHiTQo2Kfn59Ru91GmUwmVoXn8xlNJhN0uVwQiQUxv0vPMM4uBP9D2/V6HdVqtUTSulgs0Hw+Z3/6grPsivSVfoDHgH7J5/OJiQVA3xDDL7YUwTi7Nn40aLvZbCb+5+ViNAgHaRn2RrhUKqFyuZy4YIgBsR7Nclogu2BDL7TdarWkTRq4WC+ESyQ8CdjQL/z5DO1qtYoqlYo0wdls9lqtXderV7ZlWT9w+y2pDH/Dnxy1IajMsgExITZBjnCK/5UmNtS7EVgafAa6R7jFnuERa0PwOqsCxOZsahSrYGIBng3AjEo1OA52WJtKR80uWANnD0rgw2MUi2A8cD12caBDdm9wsQhXcVsiNvST2hAUCxmTjLCAhUoqlUL7/Z7+VAmyqaAMD1gbUlmo7hUwzqYGQq80zi7MpjrsLEeFDYWxKW4G1iHcI2fYG6lisSh1RhUVwA04hplnp29kt8HakMz5ckzzbJtoCJ3hwZ1VipbwWbUNSNGNbQNAe/jtfd0S7NAvu92OLfvaAjgCVz8NgYLxyLzCg7an06n2gjmOa6IhUpX2RuhwOKDNZqOtWOAGHIOye1cwHqEtfozZESRbpVoBOHHZHRPuQjMtGKkT7Xi1WmknGDgxiTjdy26gYFLl+rQNe8PH41EbscCF26/uB51KBNoS7mCI/h9xXAGnALqA4+ISrrGsh7ts+dfBpnx4hDpZDCUYajxrUzpkmeOwJhxj2/F4N4Lw31FZwCA2V0tCnxuHFkwOr4ZsAVNhUxCTK1TDKAdrUefSfdamuMBSwA30OxeJXTAp+Q77anEznEQBsbi/khP1cDzyaolcOdiqmGdzsbYi1x9El4fOnVVKIvBZtTki/QgJJhbgrUZms1nigrkYr2FtKM4NAIe1KbiWkBSgb86GHNG+hC+1gBXYtg0V8np6t1wuUaFQSORSC/TNzZdd0f4+3LWlp4eiu+6bZVl/EXPfI2GADT20E/Hhrh4aGBgYGBgYqMM/AQYAfVB4LQUP6/8AAAAASUVORK5CYII=') no-repeat;
         background-size: contain;
         background-color: #d4d3d3;
     }
 `
 
 const ToolButtonPolygonSelected = styled(ToolButtonBox)`
-    background: url(${MarkerPolygonBtnIconSelected}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA3lJREFUeNrsWj2v2jAUNbwOfQwIiRGGdGDmdWMMKyxIsCLBPyC/oOUXwNoJJFZQ3wLdgJGtMDM0AysSXeCN9aV25GcFkpjEtvR8JBTM4HuOb7jHXwgZGBgYGBgYqEIqjk5s2x7hh5UwV3e9XneVC8ZiO/gxkpSgLhY9ViYYi83hx28J2fWyjD9fseiTaAefHiTQo2Kfn59Ru91GmUwmVoXn8xlNJhN0uVwQiQUxv0vPMM4uBP9D2/V6HdVqtUTSulgs0Hw+Z3/6grPsivSVfoDHgH7J5/OJiQVA3xDDL7YUwTi7Nn40aLvZbCb+5+ViNAgHaRn2RrhUKqFyuZy4YIgBsR7Nclogu2BDL7TdarWkTRq4WC+ESyQ8CdjQL/z5DO1qtYoqlYo0wdls9lqtXderV7ZlWT9w+y2pDH/Dnxy1IajMsgExITZBjnCK/5UmNtS7EVgafAa6R7jFnuERa0PwOqsCxOZsahSrYGIBng3AjEo1OA52WJtKR80uWANnD0rgw2MUi2A8cD12caBDdm9wsQhXcVsiNvST2hAUCxmTjLCAhUoqlUL7/Z7+VAmyqaAMD1gbUlmo7hUwzqYGQq80zi7MpjrsLEeFDYWxKW4G1iHcI2fYG6lisSh1RhUVwA04hplnp29kt8HakMz5ckzzbJtoCJ3hwZ1VipbwWbUNSNGNbQNAe/jtfd0S7NAvu92OLfvaAjgCVz8NgYLxyLzCg7an06n2gjmOa6IhUpX2RuhwOKDNZqOtWOAGHIOye1cwHqEtfozZESRbpVoBOHHZHRPuQjMtGKkT7Xi1WmknGDgxiTjdy26gYFLl+rQNe8PH41EbscCF26/uB51KBNoS7mCI/h9xXAGnALqA4+ISrrGsh7ts+dfBpnx4hDpZDCUYajxrUzpkmeOwJhxj2/F4N4Lw31FZwCA2V0tCnxuHFkwOr4ZsAVNhUxCTK1TDKAdrUefSfdamuMBSwA30OxeJXTAp+Q77anEznEQBsbi/khP1cDzyaolcOdiqmGdzsbYi1x9El4fOnVVKIvBZtTki/QgJJhbgrUZms1nigrkYr2FtKM4NAIe1KbiWkBSgb86GHNG+hC+1gBXYtg0V8np6t1wuUaFQSORSC/TNzZdd0f4+3LWlp4eiu+6bZVl/EXPfI2GADT20E/Hhrh4aGBgYGBgYqMM/AQYAfVB4LQUP6/8AAAAASUVORK5CYII=') no-repeat;
     background-size: contain;
     background-color: #FFFFFF;
 `
 
 const ToolButtonLength = styled(ToolButton)`
-    background: url(${MarkerLengthBtnIcon}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAgFJREFUeNrsmtGNhCAQhterwBIsgRK2BEugg7MEOqGELYHrwOvAErgOPEzgMpkFRfSBmWMS4kbA8Akz84P7eDRr1oyydZQGu65r7y6jKwO4/ePKV9d132xmZQN1Ra/7Zlx5coAVrlgEt3jAOQKuOMFuszxEZl+hdooDrDxoP6AZf7KAdb9HP6NbGSPQoZ8hDeuXron47Oyjd+ivQJ2gPLMQ1qJ2M/LpYBNVWAEDF7gPU9UI7s9VB68IrEL1f8s00tfiPmA1vAF/1ADrLluA6cHtz5T/QX/dsYFSnoV+Ks4uaR+ps1JZLdFYQrmYCFpvsjLxEvpaYQ2ql14+Tij6moSG7iMvS9esjbMH6PsH4SHQS4Lu0NcIOyE5qAufK2O+X7OCKoamArsgOYihBSfYlAYO0AveApJexihtzCXBhZTPRnKl4Aj7pnr8wCVHWHuH1KPks+IqNBXYaadu5OizOO3ANi9OsOYAWuUMnJpc1FfOiKnAalSvS4IUNbkoLz6XBKy6I9dS89lLuZZMNN6pt1x9VifaWU6w7ViGK6xFp4ThQ/TEEfaWAVLa4l0eaJWwfmAq8R2neMDVwmacRcmzm4KqYTOht/9YvMhu8Uqg2czsXdAkYUuhScOehWYBmwvNCjZDW/OD3TvLYgt7oLV5wqZOOFjDImj1L2CbNWtWhf0KMAATVsmYzGQdCgAAAABJRU5ErkJggg==') no-repeat;
     background-size: contain;
     background-color: #404040;
 
     &: hover {
-        background: url(${MarkerLengthBtnIconSelected}) no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAz5JREFUeNrsmsuR2zAMQGVvA84tR6UD55Zb5A7kCixVsNkKdl2B04HVQbQVWB2sStAxR19zSsAMmEEYkPpTREaYwchDi7KeAAIgrChaZZVVJMtG0s0mSbKDQwoak+E7aAVS/zfACHoBzRynVaBnRe661oMA2D0c3kA/keEGtEbrvscxZfUsjuNN0zSVSAsj7A10h0MFWrExrP8F9JGcp855EQXMwOYAUTjOVxb+BrrHoQPn3htpsPBdSqBqGC8N6Decp3gPwQPbYNF1lQUTY0qN1rzjfOXKz/jdRzN6bwW5MYW9o0Zo7Ru5zFd6SfM3tkLceE9uvoDxd0oxiP2GRleP0NLaqrsggRnYsxGg0j/Jtqpy4zO1NC1GWNkGCKvkEcdtRUibxEECW/KsdsUbgS7JtAuZfyVzaxKpY1KghAFsWbPKRXMCfUHXrbF0VJLB3J9KSalZkfT0TH6mDAKYga30msVjjtZ5JdOOBNqsoY943Yw8hEKnqkXzsGXN6hvMO87XQazUeRZhryRofVgcmIF9Aj2RCNsJmrmuCXuwbRe3C69ZVSQcSN7MMBDNAusNmIFtdEBBtzOh93PAegG2rNkY086OgW5chcMY2NnXMOfGoJ9JJP2r8J/Ljb1Y2FYbY1AqSDkY+4KdDdiRemgNnONDqH3BzuLSDOy9a9dibtjJLWxZswcShK5444vATmphrqjAPMt9d6StGV+wk1nYsmZPJO3UhqVPS8BOAsxtBGjrhYE+o3qHVfIw9ZqFm3qKQRBYNcl/6MY4HL+rz+q4BOwoC3Obd7LFo7m2WSpATRa0HHl2cNrxATvIwlzDbWza8QXbG9iyZl/G5lpfsL2AW9oyZtq5hAjbGdiyZhO6WWegg4PtFLRCaMt4s3DXtowUWCewZddTGx2KM1pcBKzVpR15dtQNLg3LAlu2eNHYGw0B1ubSqVkukn8Doujf/33EwNqAS5JaMl1EMNCpNFgWmMmnVwP6iA+llAbrzMN936KRANtaeAyFDhV2aKXV9r5UsLCd98NdoUOH7dUAaIOWANu74+F4aUwE7KAWj+VFlEwC7NQ9reBhBwMz0CJgRwETaFVilhJgV1llFfnyS4ABAKXkiMJDSwd6AAAAAElFTkSuQmCC') no-repeat;
         background-size: contain;
         background-color: #d4d3d3;
     }
 `
 
 const ToolButtonLengthSelected = styled(ToolButtonBox)`
-    background: url(${MarkerLengthBtnIconSelected}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAz5JREFUeNrsmsuR2zAMQGVvA84tR6UD55Zb5A7kCixVsNkKdl2B04HVQbQVWB2sStAxR19zSsAMmEEYkPpTREaYwchDi7KeAAIgrChaZZVVJMtG0s0mSbKDQwoak+E7aAVS/zfACHoBzRynVaBnRe661oMA2D0c3kA/keEGtEbrvscxZfUsjuNN0zSVSAsj7A10h0MFWrExrP8F9JGcp855EQXMwOYAUTjOVxb+BrrHoQPn3htpsPBdSqBqGC8N6Decp3gPwQPbYNF1lQUTY0qN1rzjfOXKz/jdRzN6bwW5MYW9o0Zo7Ru5zFd6SfM3tkLceE9uvoDxd0oxiP2GRleP0NLaqrsggRnYsxGg0j/Jtqpy4zO1NC1GWNkGCKvkEcdtRUibxEECW/KsdsUbgS7JtAuZfyVzaxKpY1KghAFsWbPKRXMCfUHXrbF0VJLB3J9KSalZkfT0TH6mDAKYga30msVjjtZ5JdOOBNqsoY943Yw8hEKnqkXzsGXN6hvMO87XQazUeRZhryRofVgcmIF9Aj2RCNsJmrmuCXuwbRe3C69ZVSQcSN7MMBDNAusNmIFtdEBBtzOh93PAegG2rNkY086OgW5chcMY2NnXMOfGoJ9JJP2r8J/Ljb1Y2FYbY1AqSDkY+4KdDdiRemgNnONDqH3BzuLSDOy9a9dibtjJLWxZswcShK5444vATmphrqjAPMt9d6StGV+wk1nYsmZPJO3UhqVPS8BOAsxtBGjrhYE+o3qHVfIw9ZqFm3qKQRBYNcl/6MY4HL+rz+q4BOwoC3Obd7LFo7m2WSpATRa0HHl2cNrxATvIwlzDbWza8QXbG9iyZl/G5lpfsL2AW9oyZtq5hAjbGdiyZhO6WWegg4PtFLRCaMt4s3DXtowUWCewZddTGx2KM1pcBKzVpR15dtQNLg3LAlu2eNHYGw0B1ubSqVkukn8Doujf/33EwNqAS5JaMl1EMNCpNFgWmMmnVwP6iA+llAbrzMN936KRANtaeAyFDhV2aKXV9r5UsLCd98NdoUOH7dUAaIOWANu74+F4aUwE7KAWj+VFlEwC7NQ9reBhBwMz0CJgRwETaFVilhJgV1llFfnyS4ABAKXkiMJDSwd6AAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #FFFFFF;
 `
 
 const ToolButtonArea = styled(ToolButton)`
-    background: url(${MarkerAreaBtnIcon}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAg9JREFUeNrsWu1tgzAQxaj/227ACHSCMgIjMEIzQdmgI5BMQDYgG0AmSDIBbODeqUdl8WEa6iBj7kknEB/Gzz6/sw97HoPBYDBWCCnlC1guf1CDpa4TzmQfydp5+Zp78cC1wGXC162N4bjjzjiOA9dJh0S2RBHbSk8jClf4+FsLt0zYdYi/jGEKUYfOrZMQ4uSqaA3Bzammayr9ZHljf8AB4/8eho+RmZ9vMVkcMu9gDZgxD7NZpbFHd2DHzYxhWpOXJpeltsfhnMLffmnRwpaOui5nSkg0ghXROXrYDr5XrSIOY2PROzm5aIsCl5xKKglxoecDOrZmZLW2yEyLvKPVARShMylwpAgUlv8Mhj3bQNmvq514qD3cEaSargfK9TaXFrqweDj/upYQGF8rOle14NbqBq+WmDATZsJzJx7hgFIfTM6AOAHACQAew0yYCTNhjsP2JAA4Di/cw4MJAJ54bEG0KJuR6rZD0P1oqgzN/WCqjMV6mCoiJwjJCUIp5c50DWJENzgsdVo2oVN0qXCRvPA8L8T8F9YVj0ddPX2dm8EhawmDlY/KJP6TLNbtAvYF9kn1jMeeF5qCLl5/593V629YC8iwVZuR4qKRd7tljIU67Llw4vsqKujlt3sJ196DUqUL4P5EvqK+KiILXToZqGc2t7CU/v8UunFhAelU+YuRb2bXIIPBYDiHbwEGAIdOaSiCe5W6AAAAAElFTkSuQmCC') no-repeat;
     background-size: contain;
     background-color: #404040;
 
     &: hover {
-        background: url(${MarkerAreaBtnIconSelected}) no-repeat;
+        background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAoBJREFUeNrsWsF1wjAMNZRDb0038Ah0goYN6Ab02FuZAJiAxwTABKS33poNSCcg3SDH3lrpVbxnUtskrQHHkd7Ty8NJjL4tfctyhGBhYWFh8Vc6phtxHEdwWYIOQQvQRZqm06YD7lruzQksCoKfwCCMQgY81LTJkAHnIcawDfCs9BvjeBUsaRFx9eGyBc1AB0BaRfA0DqC/QN/a4NKibTHMgIPOtNQYpiVqXbqVojQNcK/ic5hwTDTtwQLGyRyE4NI9n42DcHqmPH4FA+4k8+t6DBZ3ZveU4TnLA3xmaZzRMWjSimUJXHhFs7vR5PXBrsMbIkxnm5aq63BG7nXgcq6IxEJYc2XpG8P/Zedi6b6GONDNphWNj+n9hNb0vrKOP4rD6kpObQkNtNP9ea8GgawdJB1DAvJCDIwDsaP+cQBvQHFmNzCbt6coQlQG7KiAl0A/DzTrEYGNaK+dK+0j3Iu7cOFLk9a7wsLF3mVLXPBB14h3SwyYATPgP6/DmkLe2mUG5FvFQyezJp41ta4AwKTFgBkwAw6SpSPa056tAHDxxOM/BYAmAnZVAGgO4BC+4KkD2JZ6YmyjGk8HqKhuPHzb92EaVLgt4TISDg7wXLA0GosHbdLyzISeO9aHSWSFPnhZqu3Syodo8lRFNReyL/yJnzpYYrOza+kE42mpuNSWvurxDSzahtXPObk92jmsvR+Gl3aauMzF71qxJMVRLSwxqnu33IeJkCLKBWz/r0oGs3xX16Uji2Gm5EQcIR5ZgQD/24ewPWMDvNAw58C37zqIZ5alZuMR65Ux08jzVErZUVwZD7NefYthsDMjO9HDrgnsE7R/ChYWFhaWhsm3AAMAEsjbVNqRBcUAAAAASUVORK5CYII=') no-repeat;
         background-size: contain;
         background-color: #d4d3d3;
     }
 `
 
 const ToolButtonAreaSelected = styled(ToolButtonBox)`
-    background: url(${MarkerAreaBtnIconSelected}) no-repeat;
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAoBJREFUeNrsWsF1wjAMNZRDb0038Ah0goYN6Ab02FuZAJiAxwTABKS33poNSCcg3SDH3lrpVbxnUtskrQHHkd7Ty8NJjL4tfctyhGBhYWFh8Vc6phtxHEdwWYIOQQvQRZqm06YD7lruzQksCoKfwCCMQgY81LTJkAHnIcawDfCs9BvjeBUsaRFx9eGyBc1AB0BaRfA0DqC/QN/a4NKibTHMgIPOtNQYpiVqXbqVojQNcK/ic5hwTDTtwQLGyRyE4NI9n42DcHqmPH4FA+4k8+t6DBZ3ZveU4TnLA3xmaZzRMWjSimUJXHhFs7vR5PXBrsMbIkxnm5aq63BG7nXgcq6IxEJYc2XpG8P/Zedi6b6GONDNphWNj+n9hNb0vrKOP4rD6kpObQkNtNP9ea8GgawdJB1DAvJCDIwDsaP+cQBvQHFmNzCbt6coQlQG7KiAl0A/DzTrEYGNaK+dK+0j3Iu7cOFLk9a7wsLF3mVLXPBB14h3SwyYATPgP6/DmkLe2mUG5FvFQyezJp41ta4AwKTFgBkwAw6SpSPa056tAHDxxOM/BYAmAnZVAGgO4BC+4KkD2JZ6YmyjGk8HqKhuPHzb92EaVLgt4TISDg7wXLA0GosHbdLyzISeO9aHSWSFPnhZqu3Syodo8lRFNReyL/yJnzpYYrOza+kE42mpuNSWvurxDSzahtXPObk92jmsvR+Gl3aauMzF71qxJMVRLSwxqnu33IeJkCLKBWz/r0oGs3xX16Uji2Gm5EQcIR5ZgQD/24ewPWMDvNAw58C37zqIZ5alZuMR65Ux08jzVErZUVwZD7NefYthsDMjO9HDrgnsE7R/ChYWFhaWhsm3AAMAEsjbVNqRBcUAAAAASUVORK5CYII=') no-repeat;
     background-size: contain;
     background-color: #FFFFFF;
 `
@@ -204,6 +191,8 @@ export interface ToolContext {
 }
 
 const DELETE_CATCHED = "DELETE_CATCHED";
+const defaultLengthFormat = (line:number) => {return line + " px"};
+const defaultAreaFormat = (area:number) => {return area + " px\xB2"}
 
 function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavigatorProps) {
     const { map, isLoaded } = useContext(MapContext) as MapObject;
@@ -221,13 +210,13 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
         drawerMap.set(Tools.None, new NoneDrawer());
 
         let areaDrawer = new AreaDrawer();
-        areaDrawer.setFormatArea(areaFormat);
+        areaDrawer.setFormatArea(areaFormat || defaultAreaFormat);
         drawerMap.set(Tools.Area, areaDrawer);
 
         drawerMap.set(Tools.Box, new BoxDrawer());
 
         let lengthDrawer = new LengthDrawer();
-        lengthDrawer.setFormatLength(lengthFormat);
+        lengthDrawer.setFormatLength(lengthFormat || defaultLengthFormat);
         drawerMap.set(Tools.Length, lengthDrawer);
 
         drawerMap.set(Tools.Pencil, new PencilDrawer());
@@ -247,7 +236,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
         });
     }
 
-    function getDrawer(source: Vector<Geometry>, select: Select) : BasicDrawer {
+    function getDrawer(source: Vector<Geometry>, select: Select) : BasicDrawer | undefined {
         return context.current.drawerMap.get(toolType);
     }
 
@@ -262,10 +251,12 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
             for (let i = 0; i < labelInfo.length; i++) {
                 let item = labelInfo[i];
                 let drawer = drawerMap.get(item.toolType as Tools);
-                let feature = drawer.createFeature(item.location, item.memo);
+                if (drawer) {
+                    let feature = drawer.createFeature(item.location, item.memo);
 
-                source.addFeature(feature);
-                addLabel(feature, item.name);
+                    source.addFeature(feature);
+                    addLabel(feature, item.name);
+                }
             }
         }
     }
@@ -280,7 +271,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                     style: (feature) => {
                         let type = feature.get(TOOL_TYPE);
                         if (type == Tools.Length || type ==Tools.Area) {
-                            return measureStyleFunciton(feature, type == Tools.Length ? lengthFormat : areaFormat);
+                            return measureStyleFunciton(feature, type == Tools.Length ? (lengthFormat || defaultLengthFormat) : (areaFormat || defaultAreaFormat));
                         } else {
                             return new Style({
                                 //text: new Text({}),
@@ -365,12 +356,16 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                         }
                     }
 
+                    let key;
                     if (featureList.length == 1) {
-                        let type = featureList[0].get(TOOL_TYPE);
-                        drawerMap.get(type).activeModify(context.current);
+                        key = featureList[0].get(TOOL_TYPE);
                     } else {
-                        drawerMap.get(Tools.None).activeModify(context.current);
+                        key = Tools.None;
                     }
+
+                    let map = drawerMap.get(key);
+                    if (map)
+                        map.activeModify(context.current);
 
                     if (setSelectedFeatures) {
                         setSelectedFeatures(featureList);
@@ -433,8 +428,12 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
 
                 document.addEventListener('keydown', keydown, false);
 
-                context.current.drawerMap.get(toolType).activeDraw(context.current);
-                context.current.drawerMap.get(toolType).activeModify(context.current);
+                let mapTmp = context.current.drawerMap.get(toolType);
+                if (mapTmp) {
+
+                    mapTmp.activeDraw(context.current);
+                    mapTmp.activeModify(context.current);
+                }
 
                 context.current = {
                     ...context.current,
@@ -461,7 +460,8 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
             select.getFeatures().clear();
             map.removeInteraction(snap);
             let drawer = getDrawer(source, select);
-            drawer.activeDraw(context.current);
+            if (drawer)
+                drawer.activeDraw(context.current);
             let newSnap = createSnap(source);
             
             map.addInteraction(newSnap);
@@ -478,12 +478,19 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 setSelectedFeatures(undefined);
             select.getFeatures().clear();
             if (toolMode == Mode.Draw) {
-                drawerMap.get(toolType).activeDraw(context.current);
+                let mapType = drawerMap.get(toolType);
+                if (mapType)
+                    mapType.activeDraw(context.current);
+
                 select.setActive(false);
                 translate.setActive(false);
             } else {
-                drawerMap.get(Tools.None).activeDraw(context.current);
-                drawerMap.get(Tools.None).activeModify(context.current);
+                let mapNone = drawerMap.get(Tools.None);
+                if (mapNone) {
+                    mapNone.activeDraw(context.current);
+                    mapNone.activeModify(context.current);
+                }
+
                 select.setActive(true);
                 translate.setActive(true);
             }
