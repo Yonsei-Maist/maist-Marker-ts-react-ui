@@ -29,7 +29,7 @@ npm install --save @yonsei-maist/react-maist-marker
 ```
 
 ## How to Use
-[Storybook](https://maist.yonsei.ac.kr/storybooks/react-maist-marker)
+[Storybook](https://maist.yonsei.ac.kr/storybook/react-maist-marker)
 
 ### Marker
 ```
