@@ -66,6 +66,9 @@ function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, area
                     case Tools.Polygon:
                         typeOption.polygon = true;
                         break;
+                    case Tools.Ellipse:
+                        typeOption.ellipse = true;
+                        break;
                 }
             }
 
