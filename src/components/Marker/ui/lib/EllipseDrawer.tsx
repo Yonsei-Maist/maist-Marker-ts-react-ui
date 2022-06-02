@@ -59,7 +59,6 @@ class EllipseDrawer extends BasicDrawer {
                 
                 if (!geometryCollection) {
                     geometryCollection = new GeometryCollection([
-                        //new Polygon([]),
                         new Point([]),
                         new Point([]),
                         new Polygon([])
@@ -76,7 +75,10 @@ class EllipseDrawer extends BasicDrawer {
                 (geometries[2] as Polygon).setCoordinates(circle.getCoordinates());
                 geometryCollection.setGeometries(geometries);
 
-                geometryCollection.set("thumbFunc", () => {return [first, last];}, true);
+                geometryCollection.set("thumbFunc", () => {
+                    let geometries = geometryCollection.getGeometries();
+                    return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
+                }, true);
                 return geometryCollection;
             }
         });
@@ -109,7 +111,7 @@ class EllipseDrawer extends BasicDrawer {
                     if (modifyGeometry) {
                         const geometry = feature.getGeometry() as Point;
                         const modifyPoint = geometry.getCoordinates();
-                        const modifyGeo = modifyGeometry.collection as GeometryCollection;
+                        const modifyGeo = modifyGeometry.geometry as GeometryCollection;
                         const geometries = modifyGeo.getGeometries();
                         const first = (geometries[0] as Point).getCoordinates();
                         const last = (geometries[1] as Point).getCoordinates();
@@ -129,12 +131,15 @@ class EllipseDrawer extends BasicDrawer {
 
                             (geometries[0] as Point).setCoordinates(newFirst);
                             (geometries[1] as Point).setCoordinates(newLast);
-                            modifyGeo.set("thumbFunc", () => {return [newFirst, newLast];}, true);
+                            //modifyGeo.set("thumbFunc", () => {return [newFirst, newLast];}, true);
+                            modifyGeo.set("thumbFunc", () => {
+                                let geometries = modifyGeo.getGeometries();
+                                return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
+                            }, true);
                         }
 
                         modifyGeo.setGeometries(geometries);
-                        modifyGeometry.geometry = geometries[0];
-                        modifyGeometry.collection = modifyGeo;
+                        modifyGeometry.geometry = modifyGeo;
                     }
                 });
                 return defaultStyle(feature, 0);
@@ -147,8 +152,7 @@ class EllipseDrawer extends BasicDrawer {
                 if (feature instanceof Feature && feature.getGeometry() instanceof GeometryCollection) {
                     const geometry = feature.getGeometry() as GeometryCollection;
                     feature.set('modifyGeometry', {
-                        collection: geometry.clone(), 
-                        geometry: geometry.getGeometries()[0]
+                        geometry: geometry.clone()
                     }, true);
                 }
             });
@@ -159,7 +163,7 @@ class EllipseDrawer extends BasicDrawer {
                 if (feature instanceof Feature && feature.getGeometry() instanceof GeometryCollection) {
                     const modifyGeometry = feature.get('modifyGeometry');
                     if (modifyGeometry) {
-                        feature.setGeometry(modifyGeometry.collection);
+                        feature.setGeometry(modifyGeometry.geometry);
                         feature.unset('modifyGeometry', true);
                     }
                 }
