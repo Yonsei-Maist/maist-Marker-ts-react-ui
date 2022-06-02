@@ -50,6 +50,7 @@ class BoxDrawer extends BasicDrawer {
     createDraw(source:Vector<Geometry>) {
         this.draw = new Draw({
             source: source,
+            freehand: true,
             type: "Circle",
             geometryFunction: createBox()
         });
@@ -87,10 +88,10 @@ class BoxDrawer extends BasicDrawer {
         this.modify.on('modifystart', function (event) {
             event.features.forEach(function (feature) {
                 if (feature instanceof Feature && feature.getGeometry() instanceof Polygon) {
-                    let geometry = feature.getGeometry() as Geometry;
+                    let geometry = feature.getGeometry() as Polygon;
                     feature.set(
                         'modifyGeometry',
-                        { geometry: geometry.clone() },
+                        { geometry: geometry.clone(), thumbFunc: () => {return geometry.getCoordinates();}},
                         true
                     );
                 }

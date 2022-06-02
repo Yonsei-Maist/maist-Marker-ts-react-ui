@@ -7,6 +7,7 @@ import { Feature } from "ol";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { measureStyleFunciton } from "./Styler";
 import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
+import { Style } from "ol/style";
 
 class LengthDrawer extends BasicDrawer {
     formatLength: (line:any) =>string;
@@ -47,6 +48,10 @@ class LengthDrawer extends BasicDrawer {
         });
 
         return this.modify;
+    }
+
+    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
+        return measureStyleFunciton(feature, customFunc);
     }
 }
 

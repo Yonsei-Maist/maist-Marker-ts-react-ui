@@ -3,6 +3,7 @@ import { primaryAction, platformModifierKeyOnly, never } from "ol/events/conditi
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Vector } from "ol/source";
+import { Style } from "ol/style";
 import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
 import BasicDrawer from "./BasicDrawer";
 import { measureStyleFunciton } from "./Styler";
@@ -45,6 +46,10 @@ class AreaDrawer extends BasicDrawer {
         });
 
         return this.modify;
+    }
+
+    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
+        return measureStyleFunciton(feature, customFunc);
     }
 }
 
