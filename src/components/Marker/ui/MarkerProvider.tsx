@@ -90,20 +90,13 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
 
             let map = mapObj.map;
             map?.addLayer(layer);
-
-            let sourceTmp = layer.getSource();
-            let resolution : number[] | undefined = undefined;
-            if (sourceTmp) {
-                let tileGrid = sourceTmp.getTileGrid();
-                if (tileGrid)
-                    resolution = tileGrid.getResolutions();
-            }
-
             map?.setView(
                 new View({
-                    resolutions: resolution,
+                    maxResolution: layer.getSource().getTileGrid().getResolutions()[0],
+                    ///resolutions: resolution,
                     extent: layer.getExtent(),
-                    constrainOnlyCenter: true
+                    constrainOnlyCenter: true,
+                    zoom: 2
                 })
             );
 
