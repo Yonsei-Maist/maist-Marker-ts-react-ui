@@ -9,16 +9,32 @@ import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_MEMO, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
 
-import styled from '@emotion/styled';
-
 import { LabelObject } from '../context';
 import SimpleGeometry from 'ol/geom/SimpleGeometry';
 import { Feature } from 'ol';
+import { Box, IconButton, styled } from '@mui/material';
+import { ArrowCircleLeft } from '@mui/icons-material';
 
-const MarkerMain = styled.div`
-    border-radius: 5px;
-    display: flex;
-`
+const drawerWidth = 200;
+
+const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !== 'open' })<{
+    open?: boolean;
+}>(({ theme, open }) => ({
+    flexGrow: 1,
+    padding: theme.spacing(3),
+    transition: theme.transitions.create('margin', {
+        easing: theme.transitions.easing.sharp,
+        duration: theme.transitions.duration.leavingScreen,
+    }),
+    marginRight: -drawerWidth,
+    ...(open && {
+        transition: theme.transitions.create('margin', {
+            easing: theme.transitions.easing.easeOut,
+            duration: theme.transitions.duration.enteringScreen,
+        }),
+        marginRight: 0,
+    }),
+}));
 
 export interface LabelInfo {
     location: any[];
@@ -41,14 +57,15 @@ export interface MarkerProps extends ToolNavigatorProps {
     labelNameList?: string[];
 };
 
-function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, areaFormat, labelInfo, labelNameList }: MarkerProps, ref:Ref<MarkerState>) {
+function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, areaFormat, labelInfo, labelNameList }: MarkerProps, ref: Ref<MarkerState>) {
     const providerState = useRef(null as MapProviderState | null);
     const [option, setOption] = useState(undefined as ToolOption | undefined);
+    const [open, setOpen] = useState(true);
 
     useEffect(() => {
         if (toolTypes) {
             let typeOption = {} as ToolOption;
-            for (let i = 0;i<toolTypes.length;i++) {
+            for (let i = 0; i < toolTypes.length; i++) {
                 let type = toolTypes[i];
                 switch (type) {
                     case Tools.Area:
@@ -81,13 +98,13 @@ function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, area
             if (providerState.current) {
 
                 let labelList = [];
-                for (let i =0;i <providerState.current.labelList.length;i++) {
+                for (let i = 0; i < providerState.current.labelList.length; i++) {
                     let item = providerState.current.labelList[i] as LabelObject;
                     let feature = item.feature as Feature<SimpleGeometry>;
                     let coordinates = null;
                     if (feature) {
                         let geometry = feature.getGeometry();
-                        if (geometry) 
+                        if (geometry)
                             coordinates = geometry.getCoordinates();
                     }
 
@@ -97,7 +114,7 @@ function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, area
                         location: coordinates,
                         memo: item.feature.get(TOOL_MEMO),
                         toolType: item.feature.get(TOOL_TYPE),
-                        name: info ? info.labelName: ""
+                        name: info ? info.labelName : ""
                     } as LabelInfo)
                 }
                 return labelList;
@@ -107,14 +124,19 @@ function Marker({ dziUrl, readOnly, toolTypes, width, height, lengthFormat, area
 
     return (
         <MapProvider ref={providerState} dziUrl={dziUrl}>
-            <MarkerMain style={{width: width, height: height}}>
+            <Box height={"100%"} position={"relative"}>
+                <MarkerMain open={open}/>
+                <IconButton color="secondary" sx={{position: "absolute", right: "15px", top: "15px"}} onClick={() => {setOpen(true);}}>
+                    <ArrowCircleLeft/>
+                </IconButton>
                 {
                     !readOnly &&
-                    <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} labelInfo={labelInfo}/>
+                    <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} labelInfo={labelInfo} />
                 }
-                <MarkComponent/>
-                <LabelNavigator labelNameList={labelNameList}/>
-            </MarkerMain>
+                <LabelNavigator labelNameList={labelNameList} open={open} onOpenChange={() => {
+                    setOpen(false);
+                }} />
+            </Box>
         </MapProvider>
     );
 }

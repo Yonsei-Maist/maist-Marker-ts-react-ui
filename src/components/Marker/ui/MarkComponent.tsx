@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import styled from '@emotion/styled';
 
 const MarkComponentStyled = styled.div`
-    width: calc(100% - 140px);
     height: 100%;
 `
 

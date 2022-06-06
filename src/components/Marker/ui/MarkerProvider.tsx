@@ -1,13 +1,16 @@
-import { Feature, Map, View } from 'ol';
+import { Collection, Feature, Map, View } from 'ol';
 import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
 import dziReader, { makeLayer } from "../../../api/DziReader";
 
 import { defaults } from 'ol/control';
 import { Tile } from 'ol/layer';
-import { Zoomify } from 'ol/source';
+import { Vector, Zoomify } from 'ol/source';
 
 import MapContext, { MapObject } from '../context/MapContext';
 import {LabelContext, LabelContextObject, LabelObject } from '../context';
+import { Select } from 'ol/interaction';
+import VectorLayer from 'ol/layer/Vector';
+import { Geometry } from 'ol/geom';
 
 export interface MapProviderState {
     labelList: LabelObject[]
@@ -59,12 +62,86 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         }
     }
 
+    function clearSelection() {
+        const {map} = mapObj;
+        if (map) {
+            let interactions = map.getInteractions();
+            for (let i in interactions.getArray()) {
+                let intercationItem = interactions.getArray()[i];
+                if (intercationItem instanceof Select) {
+                    let selectObj = intercationItem as Select;
+                    selectObj.getFeatures().clear();
+
+                    break;
+                }
+            }
+        }
+
+        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+    }
+
+    function unselect(feature: Feature) {
+        const {map} = mapObj;
+        if (map) {
+            let interactions = map.getInteractions();
+            for (let i in interactions.getArray()) {
+                let intercationItem = interactions.getArray()[i];
+                if (intercationItem instanceof Select) {
+                    let selectObj = intercationItem as Select;
+                    selectObj.getFeatures().remove(feature);
+
+                    break;
+                }
+            }
+        }
+
+        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+    }
+
+    function select(feature: Feature) {
+        const {map} = mapObj;
+        if (map) {
+            let interactions = map.getInteractions();
+            for (let i in interactions.getArray()) {
+                let intercationItem = interactions.getArray()[i];
+                if (intercationItem instanceof Select) {
+                    let selectObj = intercationItem as Select;
+                    selectObj.getFeatures().extend([feature]);
+
+                    break;
+                }
+            }
+        }
+
+        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+    }
+
+    function remove(feature: Feature) {
+        const {map} = mapObj;
+        if (map) {
+            let layers = map.getLayers();
+            for (let i in layers.getArray()) {
+                let layerItem = layers.getArray()[i];
+
+                if (layerItem instanceof VectorLayer) {
+                    let vectorLayer = layerItem as VectorLayer<Vector<Geometry>>;
+                    let source = vectorLayer.getSource();
+                    source.removeFeature(feature);
+                    break;
+                }
+            }
+        }
+
+        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+    }
+
     useEffect(() => {
         const map = new Map({
             controls: defaults({ zoom: false, rotate: false }).extend([]),
             target: 'map'
         });
-        setMapObj({...mapObj, map: map});
+
+        setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
         setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel});
         return () => map.setTarget(undefined);
     }, []);
@@ -101,7 +178,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
             );
 
             map?.getView().fit(layer.getExtent() as number[], { size: map.getSize() });
-            setMapObj({...mapObj, isLoaded: true});
+            setMapObj({...mapObj, isLoaded: true, select, remove, unselect, clearSelection});
         }
     }, [data]);
 

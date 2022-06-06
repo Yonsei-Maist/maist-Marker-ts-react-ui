@@ -1,6 +1,6 @@
 {
   "name": "@yonsei-maist/react-maist-marker",
-  "version": "0.4.7",
+  "version": "0.4.10",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -13,7 +13,6 @@
     "build": "rm -rf ./dist && npm run build:tsc && npm run build:babel",
     "build:tsc": "tsc",
     "build:babel": "babel src --out-dir dist --extensions \".ts,.tsx\" --ignore \"src/stories/*\" --source-maps inline"
-  
   },
   "repository": {
     "type": "git",
@@ -35,6 +34,8 @@
   "homepage": "https://github.com/Yonsei-Maist/maist-Marker-ts-react-ui#readme",
   "peerDependencies": {
     "@emotion/styled": "^11.0.0",
+    "@mui/material": "^5.0.0",
+    "@mui/icons-material": "^5.0.0",
     "@types/react": "^17.0.0 || ^18.0.0",
     "@types/react-dom": "^17.0.0 || ^18.0.0",
     "react": "^17.0.0 || ^18.0.0",
@@ -42,6 +43,12 @@
   },
   "peerDependenciesMeta": {
     "@emotion/styled": {
+      "optional": true
+    },
+    "@mui/material": {
+      "optional": true
+    },
+    "@mui/icons-material": {
       "optional": true
     }
   },
