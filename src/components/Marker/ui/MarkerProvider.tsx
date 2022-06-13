@@ -174,7 +174,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
                     width: 2,
                     lineDash: [0.5, 4],
                 }),
-                showLabels: true,
+                showLabels: false,
                 wrapX: false,
             });
             graticuleLayer.setVisible(false);
