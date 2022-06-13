@@ -33,6 +33,14 @@ npm install --save @yonsei-maist/react-maist-marker
 
 ### Marker
 ```
+// next js - next.config.js
+// using next-transpile-modules
+const withTM = require('next-transpile-modules')(['@yonsei-maist/react-maist-marker', ...other modules]);
+
+module.exports = withPlugins([withTM, removeImports], {
+    ...config
+}
+
 /*
 ToolOption: {
     pencil?: boolean;
