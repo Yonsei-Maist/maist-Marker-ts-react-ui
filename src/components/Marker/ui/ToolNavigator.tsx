@@ -15,18 +15,19 @@ import { Feature } from 'ol';
 import {LabelContext, LabelContextObject } from '../context';
 
 import {v4 as uuidv4} from 'uuid';
-import BasicDrawer from './lib/BasicDrawer';
-import BoxDrawer from './lib/BoxDrawer';
-import AreaDrawer from './lib/AreaDrawer';
-import LengthDrawer from './lib/LengthDrawer';
-import PencilDrawer from './lib/PencilDrawer';
-import PolygonDrawer from './lib/PolygonDrawer';
-import NoneDrawer from './lib/NoneDrawer';
+import BaseDrawer from './drawer/BaseDrawer';
+import BoxDrawer from './drawer/BoxDrawer';
+import AreaDrawer from './drawer/AreaDrawer';
+import LengthDrawer from './drawer/LengthDrawer';
+import PencilDrawer from './drawer/PencilDrawer';
+import PolygonDrawer from './drawer/PolygonDrawer';
+import NoneDrawer from './drawer/NoneDrawer';
 import { LabelInfo } from './Marker';
 
-import EllipseDrawer from './lib/EllipseDrawer';
+import EllipseDrawer from './drawer/EllipseDrawer';
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { Circle, CircleOutlined, Edit, EditOutlined, HighlightAlt, HighlightAltOutlined, Polyline, PolylineOutlined, Rectangle, RectangleOutlined, SquareFoot, SquareFootOutlined, Straighten, StraightenOutlined } from '@mui/icons-material';
+import BaseMark from './mark/BaseMark';
 
 export const TOOL_TYPE = "TOOL_TPYE";
 export const TOOL_MEMO = "TOOL_MEMO";
@@ -63,7 +64,7 @@ export interface ToolNavigatorProps {
 };
 
 export interface ToolContext {
-    drawerMap: Map<Tools, BasicDrawer>;
+    drawerMap: Map<Tools, BaseDrawer<BaseMark>>;
     removeModify: Modify;
     snap: Snap;
     source: Vector<Geometry>;
@@ -79,7 +80,7 @@ const defaultAreaFormat = (area:number) => {return area + " px\xB2"}
 function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavigatorProps) {
     const { map, isLoaded } = useContext(MapContext) as MapObject;
     const { labelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel } = useContext(LabelContext) as LabelContextObject;
-    const context = useRef({drawerMap: new Map<Tools, BasicDrawer>(), toolType: Tools.None} as ToolContext);
+    const context = useRef({drawerMap: new Map<Tools, BaseDrawer<BaseMark>>(), toolType: Tools.None} as ToolContext);
     const [toolType, setToolType] = useState(Tools.None);
     const [toolMode, setToolMode] = useState(Mode.Draw);
 
@@ -108,18 +109,20 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
         drawerMap.forEach((value) => {
             let draw = value.createDraw(source);
 
-            draw.on('drawend', function (evt: DrawEvent) {
-                let feature = evt.feature as Feature
-                
-                feature.set(TOOL_TYPE, context.current.toolType);
+            draw.on('drawend',(evt: DrawEvent) => {
+                let feature = evt.feature as Feature;
                 feature.setId(uuidv4());
-                addLabel(evt.feature);
+                feature.set(TOOL_TYPE, context.current.toolType);
+
+                let mark = value.fromFeature(feature);
+                addLabel(mark);
             });
+
             value.createModify(select);
         });
     }
 
-    function getDrawer(source: Vector<Geometry>, select: Select) : BasicDrawer | undefined {
+    function getDrawer(source: Vector<Geometry>, select: Select) : BaseDrawer<BaseMark> | undefined {
         return context.current.drawerMap.get(toolType);
     }
 
@@ -134,10 +137,10 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 let item = labelInfo[i];
                 let drawer = drawerMap.get(item.toolType as Tools);
                 if (drawer) {
-                    let feature = drawer.createFeature(item.location, item.memo);
-
-                    source.addFeature(feature);
-                    addLabel(feature, item.name);
+                    let mark = drawer.createMark(item.data);
+                    mark.feature.setId(uuidv4());
+                    source.addFeature(mark.feature);
+                    addLabel(mark);
                 }
             }
         }
@@ -269,11 +272,15 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                     layer,
                     select
                 }
-
-                load();
             }
         }
     }, [isLoaded]);
+
+    useEffect(() => {
+        if (map && isLoaded) {
+            load();
+        }
+    }, [labelInfo])
 
     useEffect(() => {
         if (context.current && map) {
@@ -344,7 +351,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
     return (
         <Box position={"absolute"} left={"15px"} top={"15px"}>
             <ToggleButtonGroup value={active} orientation='vertical' sx={{background: "white"}}>
-                <ToggleButton value={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
+                <ToggleButton value={Mode.Select} key={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
                     {
                         toolMode == Mode.Select ?
                         <HighlightAlt/>:
@@ -353,7 +360,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 </ToggleButton>
                 {
                     option.pencil && 
-                    <ToggleButton value={Tools.Pencil} onClick={() => { onToolButtonClickListener(Tools.Pencil); }}>
+                    <ToggleButton value={Tools.Pencil} key={Tools.Pencil}  onClick={() => { onToolButtonClickListener(Tools.Pencil); }}>
                         {
                             toolType == Tools.Pencil ? <Edit/> : <EditOutlined/>
                         }
@@ -361,7 +368,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 }
                 {
                     option.box &&
-                    <ToggleButton value={Tools.Box} onClick={() => { onToolButtonClickListener(Tools.Box); }}>
+                    <ToggleButton value={Tools.Box} key={Tools.Box} onClick={() => { onToolButtonClickListener(Tools.Box); }}>
                         {
                             toolType == Tools.Box ? <Rectangle/> : <RectangleOutlined/>
                         }
@@ -369,7 +376,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 }
                 {
                     option.polygon &&
-                    <ToggleButton value={Tools.Polygon} onClick={() => { onToolButtonClickListener(Tools.Polygon);}} >
+                    <ToggleButton value={Tools.Polygon} key={Tools.Polygon} onClick={() => { onToolButtonClickListener(Tools.Polygon);}} >
                         {
                             toolType == Tools.Polygon ? <Polyline/> : <PolylineOutlined/>
                         }
@@ -377,7 +384,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 }
                 {
                     option.ellipse &&
-                    <ToggleButton value={Tools.Ellipse} onClick={() => { onToolButtonClickListener(Tools.Ellipse); }}>
+                    <ToggleButton value={Tools.Ellipse} key={Tools.Ellipse} onClick={() => { onToolButtonClickListener(Tools.Ellipse); }}>
                         {
                             toolType == Tools.Ellipse ? <Circle/> : <CircleOutlined/>
                         }
@@ -385,7 +392,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 }
                 {
                     option.length &&
-                    <ToggleButton value={Tools.Length} onClick={() => { onToolButtonClickListener(Tools.Length); }}>
+                    <ToggleButton value={Tools.Length} key={Tools.Length} onClick={() => { onToolButtonClickListener(Tools.Length); }}>
                         {
                             toolType == Tools.Length ? <Straighten/> : <StraightenOutlined/>
                         }
@@ -393,7 +400,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 }
                 {
                     option.area &&
-                    <ToggleButton value={Tools.Area} onClick={() => { onToolButtonClickListener(Tools.Area); }}>
+                    <ToggleButton value={Tools.Area} key={Tools.Area} onClick={() => { onToolButtonClickListener(Tools.Area); }}>
                         {
                             toolType == Tools.Area ? <SquareFoot/> : <SquareFootOutlined/>
                         }

@@ -1,21 +1,16 @@
 import React from 'react';
 import { Feature } from 'ol';
-import { SimpleGeometry } from 'ol/geom';
-
-export interface LabelObject {
-    feature: Feature;
-    labelInfo?: LabelInformation;
-}
+import BaseMark from '../ui/mark/BaseMark';
 
 export interface LabelInformation {
     labelName: string;
 }
 
 export interface LabelContextObject {
-    labelList: LabelObject[];
+    labelList: BaseMark[];
     selectedFeatures?: Feature[];
     setSelectedFeatures?: (feature?: Feature[]) => void;
-    addLabel: (feature: Feature, labelName?:string) => void;
+    addLabel: (feature: BaseMark, labelName?:string) => void;
     removeLabel: (feature: Feature) => void;
     refresh: () => void;
 }

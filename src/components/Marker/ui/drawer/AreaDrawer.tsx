@@ -1,26 +1,42 @@
 import { Feature } from "ol";
+import { Coordinate } from "ol/coordinate";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Vector } from "ol/source";
 import { Style } from "ol/style";
+import BaseMark from "../mark/BaseMark";
 import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
-import BasicDrawer from "./BasicDrawer";
+import BasicDrawer from "./BaseDrawer";
 import { measureStyleFunciton } from "./Styler";
 
-class AreaDrawer extends BasicDrawer {
+class AreaMark extends BaseMark {
+    location: Coordinate[][];
+}
+
+class AreaDrawer extends BasicDrawer<AreaMark> {
     formatArea: (line:any) =>string
 
     setFormatArea(formatArea: (length:number) =>string) {
         this.formatArea = formatArea
     }
 
-    createFeature(location: any[], memo?:string) {
-        let geo = new Polygon(location);
-        let feature = new Feature(geo);
-        feature.set(TOOL_TYPE, Tools.Area);
-        feature.set(TOOL_MEMO, memo);
-        return feature;
+    createMark(saveData: string, memo?: string): AreaMark {
+        let parsed = this.loadSaveData(saveData);
+        let geo = new Polygon(parsed.location);
+        parsed.feature = new Feature(geo);
+        parsed.feature.set(TOOL_MEMO, memo);
+        parsed.feature.set(TOOL_TYPE, Tools.Area);
+        parsed.toolType = Tools.Area;
+        return parsed;
+    }
+
+    fromFeature(feature: Feature<Geometry>): AreaMark {
+        let mark = new AreaMark();
+        mark.feature = feature;
+        mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
+        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
+        return mark;
     }
 
     createDraw(source:Vector<Geometry>) {

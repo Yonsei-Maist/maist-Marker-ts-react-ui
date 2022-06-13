@@ -3,9 +3,10 @@ import { Geometry, MultiPoint, Polygon, SimpleGeometry } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Vector } from "ol/source";
 import { Style, Fill, Stroke, Circle } from "ol/style";
+import BaseMark from "../mark/BaseMark";
 import { ToolContext, Tools } from "../ToolNavigator";
 
-class BasicDrawer {
+class BasicDrawer<T extends BaseMark> {
     draw:Draw;
     modify:Modify;
 
@@ -16,8 +17,20 @@ class BasicDrawer {
 
     }
 
-    createFeature(location: any[], memo?: string) {
-        return {} as Feature<SimpleGeometry>
+    loadSaveData(saveData: string) {
+        return JSON.parse(saveData) as T;
+    }
+
+    createMark(saveData: string, memo?: string) {
+        return {} as T;
+    }
+
+    fromFeature(feature: Feature) {
+        return {} as T;
+    }
+
+    createSaveData(mark: BaseMark) {
+        return JSON.stringify(mark);
     }
 
     createDraw(source:Vector<Geometry>) {

@@ -1,11 +1,13 @@
 import { Geometry, Point, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Vector } from "ol/source";
-import BasicDrawer from "./BasicDrawer";
+import BasicDrawer from "./BaseDrawer";
 import { createBox } from 'ol/interaction/Draw';
 import { never, platformModifierKeyOnly, primaryAction } from "ol/events/condition";
 import { Feature } from "ol";
-import { Tools, TOOL_TYPE } from "../ToolNavigator";
+import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
+import BaseMark from "../mark/BaseMark";
+import { Coordinate } from "ol/coordinate";
 
 export function calculateCenter(geometry: Polygon, point: number[]): any {
     let coordinates = geometry.getCoordinates()[0];
@@ -38,13 +40,30 @@ export function calculateCenter(geometry: Polygon, point: number[]): any {
     return newCoord;
 }
 
-class BoxDrawer extends BasicDrawer {
+class BoxMark extends BaseMark {
+    location: Coordinate[][];
+}
 
-    createFeature(location: any[], memo?: string) {
-        let geo = new Polygon(location);
-        let feature = new Feature(geo);
-        feature.set(TOOL_TYPE, Tools.Box);
-        return feature;
+class BoxDrawer extends BasicDrawer<BoxMark> {
+
+    createMark(saveData: string, memo?: string): BoxMark {
+        let parsed = this.loadSaveData(saveData);
+
+        let geo = new Polygon(parsed.location);
+        parsed.feature = new Feature(geo);
+        parsed.feature.set(TOOL_MEMO, memo);
+        parsed.feature.set(TOOL_TYPE, Tools.Box);
+        parsed.toolType = Tools.Box;
+        return parsed;
+    }
+
+    fromFeature(feature: Feature<Geometry>): BoxMark {
+        let mark = new BoxMark();
+        mark.feature = feature;
+        mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
+        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
+
+        return mark;
     }
 
     createDraw(source:Vector<Geometry>) {

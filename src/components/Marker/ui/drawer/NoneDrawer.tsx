@@ -1,10 +1,11 @@
 import { Geometry } from "ol/geom";
 import { Draw } from "ol/interaction";
 import { Vector } from "ol/source";
+import BaseMark from "../mark/BaseMark";
 import { ToolContext, Tools } from "../ToolNavigator";
-import BasicDrawer from "./BasicDrawer";
+import BasicDrawer from "./BaseDrawer";
 
-class NoneDrawer extends BasicDrawer {
+class NoneDrawer extends BasicDrawer<BaseMark> {
     createDraw(source:Vector<Geometry>) {
         this.draw = new Draw({
             source: source,

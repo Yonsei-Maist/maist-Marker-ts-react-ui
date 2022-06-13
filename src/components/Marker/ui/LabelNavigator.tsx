@@ -40,7 +40,7 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                     {
                         labelNameList.map((o, i) => {
                             return (
-                                <MenuItem value={o}>{o}</MenuItem>
+                                <MenuItem key={i + o} value={o}>{o}</MenuItem>
                             )
                         })
                     }
@@ -50,8 +50,8 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                 {
                     labelList.map((o, i) => {
                         let isSelected = false;
-                        if (!o.labelInfo)
-                            o.labelInfo = { labelName: selectedLabel } as LabelInformation;
+                        if (!o.label)
+                            o.label = { labelName: selectedLabel } as LabelInformation;
 
                         let feature = o.feature;
 
@@ -65,13 +65,13 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                         }
 
                         return (
-                            <ListItem>
+                            <ListItem key={i + "_label"}>
                                 <Stack spacing={1}>
                                     <Stack direction="row" alignItems="center" gap={1}>
                                         <Checkbox checked={isSelected} onChange={(e) => {
                                             if (!e.target.checked) {
                                                 let newSelected = selectedFeatures || [];
-                                                unselect(feature);
+                                                unselect(o);
                                                 let index = newSelected.indexOf(feature);
                                                 if (index > -1) {
                                                     newSelected.splice(index, 1);
@@ -80,14 +80,14 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                                                 setSelectedFeatures(newSelected);
                                             } else {
                                                 let newSelected = selectedFeatures || [];
-                                                select(feature);
+                                                select(o);
                                                 refresh();
                                                 setSelectedFeatures(newSelected.concat(feature));
                                             }
                                         }}/>
                                         <Typography variant="body1">{feature.get(TOOL_TYPE)}</Typography>
                                         <IconButton onClick={() => {
-                                            remove(feature);
+                                            remove(o);
                                             removeLabel(feature);
                                             let newSelected = selectedFeatures || [];
                                             let index = newSelected.indexOf(feature);
@@ -100,16 +100,16 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                                             <DeleteForever />
                                         </IconButton>
                                     </Stack>
-                                    <Select size='small' value={o.labelInfo.labelName} onChange={(e) => { 
-                                            if (o.labelInfo) 
-                                                o.labelInfo.labelName = e.target.value; 
+                                    <Select size='small' value={o.label.labelName} onChange={(e) => { 
+                                            if (o.label) 
+                                                o.label.labelName = e.target.value; 
                                             refresh();
                                             setSelectedFeatures(selectedFeatures);
                                         }}>
                                         {
                                             labelNameList.map((o, i) => {
                                                 return (
-                                                    <MenuItem value={o}>{o}</MenuItem>
+                                                    <MenuItem key={i + o} value={o}>{o}</MenuItem>
                                                 )
                                             })
                                         }

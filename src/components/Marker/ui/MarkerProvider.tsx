@@ -1,4 +1,4 @@
-import { Collection, Feature, Map, View } from 'ol';
+import { Feature, Graticule, Map, View } from 'ol';
 import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
 import dziReader, { makeLayer } from "../../../api/DziReader";
 
@@ -7,13 +7,15 @@ import { Tile } from 'ol/layer';
 import { Vector, Zoomify } from 'ol/source';
 
 import MapContext, { MapObject } from '../context/MapContext';
-import {LabelContext, LabelContextObject, LabelObject } from '../context';
+import {LabelContext, LabelContextObject } from '../context';
 import { Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import { Geometry } from 'ol/geom';
+import { Stroke } from 'ol/style';
+import BaseMark from './mark/BaseMark';
 
 export interface MapProviderState {
-    labelList: LabelObject[]
+    labelList: BaseMark[]
 }
 
 type MapProviderProps = {
@@ -23,7 +25,7 @@ type MapProviderProps = {
 
 function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
-    const [labelContext, setLabelContext] = useState({labelList: [] as LabelObject[]} as LabelContextObject);
+    const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[]} as LabelContextObject);
     const [state, refetch] = dziReader(dziUrl, []);
     const { loading, data, error } = state;
 
@@ -41,9 +43,10 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         setLabelContext({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh})
     }
 
-    function addLabel(feature: Feature, labelName?: string) {
+    function addLabel(mark: BaseMark, labelName?: string) {
         let labelInfo = labelName ? {labelName: labelName} : undefined;
-        labelContext.labelList.push({feature: feature, labelInfo: labelInfo});
+        mark.label = labelInfo;
+        labelContext.labelList.push(mark);
         setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh});
     }
 
@@ -80,7 +83,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         setMapObj({...mapObj, select, remove, unselect, clearSelection});
     }
 
-    function unselect(feature: Feature) {
+    function unselect(mark: BaseMark) {
         const {map} = mapObj;
         if (map) {
             let interactions = map.getInteractions();
@@ -88,7 +91,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
                 let intercationItem = interactions.getArray()[i];
                 if (intercationItem instanceof Select) {
                     let selectObj = intercationItem as Select;
-                    selectObj.getFeatures().remove(feature);
+                    selectObj.getFeatures().remove(mark.feature);
 
                     break;
                 }
@@ -98,7 +101,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         setMapObj({...mapObj, select, remove, unselect, clearSelection});
     }
 
-    function select(feature: Feature) {
+    function select(mark: BaseMark) {
         const {map} = mapObj;
         if (map) {
             let interactions = map.getInteractions();
@@ -106,7 +109,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
                 let intercationItem = interactions.getArray()[i];
                 if (intercationItem instanceof Select) {
                     let selectObj = intercationItem as Select;
-                    selectObj.getFeatures().extend([feature]);
+                    selectObj.getFeatures().extend([mark.feature]);
 
                     break;
                 }
@@ -116,7 +119,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         setMapObj({...mapObj, select, remove, unselect, clearSelection});
     }
 
-    function remove(feature: Feature) {
+    function remove(marker: BaseMark) {
         const {map} = mapObj;
         if (map) {
             let layers = map.getLayers();
@@ -126,8 +129,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
                 if (layerItem instanceof VectorLayer) {
                     let vectorLayer = layerItem as VectorLayer<Vector<Geometry>>;
                     let source = vectorLayer.getSource();
-                    source.removeFeature(feature);
-                    break;
+                    source.removeFeature(marker.feature);
                 }
             }
         }
@@ -165,8 +167,20 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
             layer.setExtent([0, -info.height, info.width, 0]);
             layer.setSource(source);
 
+            let graticuleLayer = new Graticule({
+                // the style to use for the lines, optional.
+                strokeStyle: new Stroke({
+                    color: 'rgba(255,120,0,0.9)',
+                    width: 2,
+                    lineDash: [0.5, 4],
+                }),
+                showLabels: true,
+                wrapX: false,
+            });
+            graticuleLayer.setVisible(false);
             let map = mapObj.map;
             map?.addLayer(layer);
+            map?.addLayer(graticuleLayer);
             map?.setView(
                 new View({
                     maxResolution: layer.getSource().getTileGrid().getResolutions()[0],

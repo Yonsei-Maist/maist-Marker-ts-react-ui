@@ -4,14 +4,15 @@ import { primaryAction, platformModifierKeyOnly, always, never, mouseOnly, shift
 import { Geometry, Circle, Polygon, Point, GeometryCollection, SimpleGeometry, LineString, MultiPoint } from "ol/geom";
 import { Draw, Select, Modify } from "ol/interaction";
 import { Vector } from "ol/source";
-import { TOOL_TYPE, Tools } from "../ToolNavigator";
-import BasicDrawer from "./BasicDrawer";
+import { TOOL_TYPE, Tools, TOOL_MEMO } from "../ToolNavigator";
+import BasicDrawer from "./BaseDrawer";
 import { circular, fromCircle } from 'ol/geom/Polygon'
 import { calculateCenter } from "./BoxDrawer";
 import { transform } from "ol/proj";
 import { getDistance } from "ol/sphere";
 import { getCenter } from "ol/extent";
 import { Style } from "ol/style";
+import BaseMark from "../mark/BaseMark";
 
 const isThumb = (coordinates: Coordinate[], point: Coordinate) => {
     for (let i in coordinates) {
@@ -38,15 +39,42 @@ const calculateEllipse = (first: Coordinate, last: Coordinate): Polygon => {
     return circle;
 }
 
-class EllipseDrawer extends BasicDrawer {
+class EllipseMark extends BaseMark {
+    first: Coordinate;
+    last: Coordinate;
+}
 
-    createFeature(location: any[], memo?: string) {
-        let geo = new Polygon(location);
-        let feature = new Feature(geo);
+class EllipseDrawer extends BasicDrawer<EllipseMark> {
+    createMark(saveData: string, memo?: string): EllipseMark {
+        let parsed = this.loadSaveData(saveData);
+        var first = parsed.first;
+        var last = parsed.last;
 
-        feature.set(TOOL_TYPE, Tools.Ellipse);
+        const circle = calculateEllipse(first, last);
+        let geo = new GeometryCollection([
+            new Point(first),
+            new Point(last),
+            new Polygon(circle.getCoordinates())
+        ]);
 
-        return feature;
+        parsed.feature = new Feature(geo);
+        parsed.toolType = Tools.Ellipse;
+        parsed.feature.set(TOOL_MEMO, memo);
+        parsed.feature.set(TOOL_TYPE, Tools.Ellipse);
+
+        return parsed;
+    }
+
+    fromFeature(feature: Feature<Geometry>): EllipseMark {
+        let mark = new EllipseMark();
+        let geo = feature.getGeometry() as GeometryCollection;
+        let geos = geo.getGeometries();
+        mark.feature = feature;
+        mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
+        mark.first = (geos[0] as Point).getCoordinates();
+        mark.last = (geos[1] as Point).getCoordinates();
+
+        return mark;
     }
 
     createDraw(source:Vector<Geometry>) {
