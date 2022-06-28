@@ -29,8 +29,13 @@ class BasicDrawer<T extends BaseMark> {
         return {} as T;
     }
 
-    createSaveData(mark: BaseMark) {
-        return JSON.stringify(mark);
+    createSaveData(mark: BaseMark, toObject: boolean) {
+        let saving = {...mark};
+        delete saving.feature;
+        delete saving.id;
+        delete saving.label;
+        delete saving.toolType;
+        return toObject ? saving : JSON.stringify(saving);
     }
 
     createDraw(source:Vector<Geometry>) {

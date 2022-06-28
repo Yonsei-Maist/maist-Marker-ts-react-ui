@@ -138,6 +138,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                 let drawer = drawerMap.get(item.toolType as Tools);
                 if (drawer) {
                     let mark = drawer.createMark(item.data);
+                    mark.label = {labelName: item.label};
                     mark.feature.setId(uuidv4());
                     source.addFeature(mark.feature);
                     addLabel(mark);

@@ -40,6 +40,7 @@ const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !==
 export interface LabelInfo {
     data: string;
     toolType: Tools;
+    label: string;
 }
 
 export interface MarkerState {
@@ -62,7 +63,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     const [localLabelInfo, setLocalLabelInfo] = useState(labelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
 
-    const getLabel = () => {
+    const getLabel = (toObject: boolean) => {
         let labelList = [];
         let baseDrawer = new BaseDrawer<BaseMark>();
         if (providerState.current) {
@@ -70,8 +71,9 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
                 let item = providerState.current.labelList[i];
 
                 labelList.push({
-                    data: baseDrawer.createSaveData(item),
-                    toolType: item.feature.get(TOOL_TYPE)
+                    data: baseDrawer.createSaveData(item, toObject),
+                    toolType: item.feature.get(TOOL_TYPE),
+                    label: item.label.labelName
                 } as LabelInfo);
             }
 
@@ -81,13 +83,14 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     }
 
     const onSave = () => {
-        let labels = getLabel();
+        let labels = getLabel(true);
+        console.log(labels);
         if (saveHandler)
             saveHandler(labels);
     };
 
     const onLocalSave = () => {
-        let labels = getLabel();
+        let labels = getLabel(false);
         // save to local
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(labels));
     }
@@ -161,7 +164,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
 
-            return getLabel();
+            return getLabel(true);
         }
     } as MarkerState));
 

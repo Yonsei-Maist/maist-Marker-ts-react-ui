@@ -50,6 +50,7 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                 {
                     labelList.map((o, i) => {
                         let isSelected = false;
+                        
                         if (!o.label)
                             o.label = { labelName: selectedLabel } as LabelInformation;
 

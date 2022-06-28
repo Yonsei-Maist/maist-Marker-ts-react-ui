@@ -43,9 +43,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         setLabelContext({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh})
     }
 
-    function addLabel(mark: BaseMark, labelName?: string) {
-        let labelInfo = labelName ? {labelName: labelName} : undefined;
-        mark.label = labelInfo;
+    function addLabel(mark: BaseMark) {
         labelContext.labelList.push(mark);
         setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh});
     }
