@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
 
@@ -12,7 +12,7 @@ export interface DziInformation {
     url: string;
 }
 
-export function makeLayer(path:string, data:any):DziInformation {
+export function makeLayer(path:string, data:any, axiosInstance?: AxiosInstance):DziInformation {
     var last = path.lastIndexOf('.');
     var path = path.slice(0, last);
 
@@ -44,7 +44,7 @@ export function makeLayer(path:string, data:any):DziInformation {
             );
         },
         tileLoadFunction: (image:any, src:any) => {
-            axios.get(src, { responseType: 'blob' })
+            (axiosInstance || axios.create()).get(src, { responseType: 'blob' })
             .then((res) => {
                 const url = window.URL.createObjectURL(res.data);
                 image.getImage().src = url;
@@ -56,9 +56,9 @@ export function makeLayer(path:string, data:any):DziInformation {
     }
 }
 
-function ReadDzi(url:string, dev: React.DependencyList): [ReducerState, ()=>Promise<void>] {
+function ReadDzi(url:string, dev: React.DependencyList, axiosInstance?: AxiosInstance): [ReducerState, ()=>Promise<void>] {
     async function getDzi() {
-        const response = await axios.get(
+        const response = await (axiosInstance || axios.create()).get(
             url
         );
 

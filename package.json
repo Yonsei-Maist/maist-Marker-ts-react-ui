@@ -1,6 +1,6 @@
 {
   "name": "@yonsei-maist/react-maist-marker",
-  "version": "0.4.14",
+  "version": "0.4.17",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

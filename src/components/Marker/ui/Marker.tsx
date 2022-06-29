@@ -14,6 +14,7 @@ import PaletteNavigator from './PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
 import BaseMark from './mark/BaseMark';
 import Confirm from './Confirm';
+import { AxiosInstance } from 'axios';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -53,9 +54,10 @@ export interface MarkerProps extends ToolNavigatorProps {
     toolTypes?: Tools[];
     labelNameList?: string[];
     saveHandler?: (labelList: LabelInfo[]) => void;
+    axiosInstance?: AxiosInstance;
 };
 
-function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelInfo, labelNameList, saveHandler }: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelInfo, labelNameList, saveHandler, axiosInstance }: MarkerProps, ref: Ref<MarkerState>) {
     const providerState = useRef(null as MapProviderState | null);
     const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
@@ -169,7 +171,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl}>
+        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>

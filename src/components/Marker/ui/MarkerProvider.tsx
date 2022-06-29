@@ -13,6 +13,8 @@ import VectorLayer from 'ol/layer/Vector';
 import { Geometry } from 'ol/geom';
 import { Stroke } from 'ol/style';
 import BaseMark from './mark/BaseMark';
+import { AxiosInstance } from 'axios';
+import { Alert, Box, CircularProgress } from '@mui/material';
 
 export interface MapProviderState {
     labelList: BaseMark[]
@@ -21,12 +23,13 @@ export interface MapProviderState {
 type MapProviderProps = {
     dziUrl: string;
     children?: React.ReactNode;
+    axiosInstance?: AxiosInstance;
 };
 
-function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
     const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[]} as LabelContextObject);
-    const [state, refetch] = dziReader(dziUrl, []);
+    const [state, refetch] = dziReader(dziUrl, [], axiosInstance);
     const { loading, data, error } = state;
 
     useImperativeHandle(ref, () => {
@@ -150,7 +153,7 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
         if (data) {
             var layer = new Tile();
 
-            let info = makeLayer(dziUrl, data);
+            let info = makeLayer(dziUrl, data, axiosInstance);
 
             var source = new Zoomify({
                 url: info.url,
@@ -197,7 +200,18 @@ function MapProvider({ dziUrl, children }: MapProviderProps, ref:Ref<MapProvider
     return (
         <MapContext.Provider value={mapObj}>
             <LabelContext.Provider value={labelContext}>
-                {children}
+                {
+                    !loading &&
+                    error &&
+                    <Alert severity='error'>{"Error !"}</Alert>
+                }
+                {
+                    children
+                }
+                {
+                    loading &&
+                    <CircularProgress size={20} sx={{position: "absolute", top: "50%", left: "50%", transform:"translate(-50%, -50%)"}}/>
+                }
             </LabelContext.Provider>
         </MapContext.Provider>
     );

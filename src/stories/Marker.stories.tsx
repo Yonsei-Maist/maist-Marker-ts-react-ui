@@ -9,7 +9,7 @@ export default {
     component: Marker,
 };
 
-const url = "https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
+const url = "http://localhost:8080/omarker/convert/2022/6/29/51589d91-9326-4959-b824-cfec8e0c4446/ser1005img01001.dzi"; //"https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
 
 export const Default = () => <div style={{ height: "800px", width: "100%" }}>
     <Marker dziUrl={url}></Marker>
