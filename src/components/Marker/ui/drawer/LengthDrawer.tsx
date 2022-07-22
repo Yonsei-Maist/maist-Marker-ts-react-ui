@@ -34,6 +34,7 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
         mark.location = (feature.getGeometry() as LineString).getCoordinates();
+        mark.toolType = feature.get(TOOL_TYPE);
 
         return mark;
     }

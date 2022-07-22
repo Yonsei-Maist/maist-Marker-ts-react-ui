@@ -73,6 +73,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
         mark.first = (geos[0] as Point).getCoordinates();
         mark.last = (geos[1] as Point).getCoordinates();
+        mark.toolType = feature.get(TOOL_TYPE);
 
         return mark;
     }

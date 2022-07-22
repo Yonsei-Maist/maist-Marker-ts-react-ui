@@ -79,7 +79,7 @@ const defaultAreaFormat = (area:number) => {return area + " px\xB2"}
 
 function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavigatorProps) {
     const { map, isLoaded } = useContext(MapContext) as MapObject;
-    const { labelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel } = useContext(LabelContext) as LabelContextObject;
+    const { labelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel, toolTypeChanged } = useContext(LabelContext) as LabelContextObject;
     const context = useRef({drawerMap: new Map<Tools, BaseDrawer<BaseMark>>(), toolType: Tools.None} as ToolContext);
     const [toolType, setToolType] = useState(Tools.None);
     const [toolMode, setToolMode] = useState(Mode.Draw);
@@ -133,9 +133,10 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
     const load = () => {
         if (labelInfo) {
             const {source, drawerMap} = context.current;
+            
             for (let i = 0; i < labelInfo.length; i++) {
                 let item = labelInfo[i];
-                let drawer = drawerMap.get(item.toolType as Tools);
+                let drawer = drawerMap.get(item.toolType);
                 if (drawer) {
                     let mark = drawer.createMark(item.data);
                     mark.label = {labelName: item.label};
@@ -281,7 +282,8 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
         if (map && isLoaded) {
             load();
         }
-    }, [labelInfo])
+
+    }, [labelInfo, map, isLoaded]);
 
     useEffect(() => {
         if (context.current && map) {
@@ -300,6 +302,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
             map.addInteraction(newSnap);
             context.current.snap = newSnap;
             context.current.toolType = toolType;
+            toolTypeChanged(toolType);
         }
     }, [toolType]);
 

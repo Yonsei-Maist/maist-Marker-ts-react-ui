@@ -1,6 +1,6 @@
 {
   "name": "@yonsei-maist/react-maist-marker",
-  "version": "0.4.17",
+  "version": "0.5.1",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -9,6 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "storybook": "start-storybook -p 6006",
+    "deploy": "npm publish",
     "build-storybook": "build-storybook",
     "build": "rm -rf ./dist && npm run build:tsc && npm run build:babel",
     "build:tsc": "tsc",

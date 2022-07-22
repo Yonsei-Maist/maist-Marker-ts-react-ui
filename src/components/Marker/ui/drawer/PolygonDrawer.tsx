@@ -30,6 +30,7 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
         mark.location = (feature.getGeometry() as Polygon).getCoordinates();
+        mark.toolType = feature.get(TOOL_TYPE);
 
         return mark;
     }

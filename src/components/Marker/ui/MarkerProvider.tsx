@@ -15,20 +15,27 @@ import { Stroke } from 'ol/style';
 import BaseMark from './mark/BaseMark';
 import { AxiosInstance } from 'axios';
 import { Alert, Box, CircularProgress } from '@mui/material';
+import { Tools } from './ToolNavigator';
 
 export interface MapProviderState {
     labelList: BaseMark[]
+}
+
+export interface LabelNameInfo {
+    toolType: Tools;
+    labelNameList: string[];
 }
 
 type MapProviderProps = {
     dziUrl: string;
     children?: React.ReactNode;
     axiosInstance?: AxiosInstance;
+    labelNameList: LabelNameInfo[];
 };
 
-function MapProvider({ dziUrl, children, axiosInstance }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance, labelNameList }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
-    const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[]} as LabelContextObject);
+    const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
     const [state, refetch] = dziReader(dziUrl, [], axiosInstance);
     const { loading, data, error } = state;
 
@@ -38,17 +45,33 @@ function MapProvider({ dziUrl, children, axiosInstance }: MapProviderProps, ref:
         } as MapProviderState;
     });
 
+    function getLabelNameList(toolType: Tools) {
+        let labelNameStrList = labelNameList.find((o) => o.toolType == toolType);
+        return labelNameStrList ? [...labelNameStrList.labelNameList]: [] as string[]
+    }
+
+    function toolTypeChanged(toolType: Tools) {
+        let globalLabelNameList = getLabelNameList(toolType);
+
+        labelContext.globalLabelNameList.splice(0, labelContext.globalLabelNameList.length);
+        for (let i = 0;i<globalLabelNameList.length;i++) {
+            labelContext.globalLabelNameList.push(globalLabelNameList[i]);
+        }
+
+        setLabelContext(() => ({...labelContext, globalLabelNameList, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+    }
+
     function refresh() {
-        setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh});
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
     }
 
     function setSelectedFeatures(features?: Feature[]) {
-        setLabelContext({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh})
+        setLabelContext(() => ({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
     }
 
     function addLabel(mark: BaseMark) {
         labelContext.labelList.push(mark);
-        setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh});
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
     }
 
     function removeLabel(feature: Feature) {
@@ -62,7 +85,7 @@ function MapProvider({ dziUrl, children, axiosInstance }: MapProviderProps, ref:
 
         if (removeIdx > -1) {
             labelContext.labelList.splice(removeIdx, 1);
-            setLabelContext({...labelContext, selectedFeatures: undefined, setSelectedFeatures, addLabel, removeLabel, refresh})
+            setLabelContext(() => ({...labelContext, selectedFeatures: undefined, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
         }
     }
 
@@ -145,7 +168,7 @@ function MapProvider({ dziUrl, children, axiosInstance }: MapProviderProps, ref:
         });
 
         setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
-        setLabelContext({...labelContext, setSelectedFeatures, addLabel, removeLabel});
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
         return () => map.setTarget(undefined);
     }, []);
 

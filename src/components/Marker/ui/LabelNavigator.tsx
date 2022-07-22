@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { LabelContext, LabelInformation, MapContext } from '../context';
-import { TOOL_TYPE } from './ToolNavigator';
+import { Tools, TOOL_TYPE } from './ToolNavigator';
 
 import { default as styledEm } from '@emotion/styled';
 import { Drawer, Divider, List, ListItem, Button, Select, MenuItem, Stack, styled, useTheme, Checkbox, Typography, IconButton } from '@mui/material';
@@ -17,28 +17,30 @@ const RelDrawer = styled(Drawer)(({theme}) => ({
 }));
 
 type LabelNavigatorProps = {
-    labelNameList: string[]
     open?: boolean
     onOpenChange: () => void
 };
 
-function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorProps) {
-    const { labelList, selectedFeatures, setSelectedFeatures, removeLabel, refresh } = useContext(LabelContext);
+function LabelNavigator({open, onOpenChange }: LabelNavigatorProps) {
+    const { labelList, selectedFeatures, globalLabelNameList, getLabelNameList, setSelectedFeatures, removeLabel, refresh } = useContext(LabelContext);
     const { remove, select, unselect } = useContext(MapContext);
-    const [selectedLabel, setSelectedLabel] = useState(labelNameList[0]);
+    
+    const [selectedLabel, setSelectedLabel] = useState(globalLabelNameList && globalLabelNameList.length > 0 ? globalLabelNameList[0] : '');
     const theme = useTheme();
 
     useEffect(() => {
-    }, [labelList]);
+        setSelectedLabel(globalLabelNameList && globalLabelNameList.length > 0 ? globalLabelNameList[0] : '');
+    }, [globalLabelNameList]);
+
     return (
         <RelDrawer variant="persistent" open={open} anchor={"right"}>
             <Button color="secondary" endIcon={<ArrowRight />} onClick={onOpenChange}>
                 HIDE
             </Button>
             <MarkerLabelInfo>
-                <Select size='small' value={selectedLabel} onChange={(e) => { setSelectedLabel(e.target.value as string); }}>
+                <Select fullWidth size='small' value={selectedLabel} onChange={(e) => { setSelectedLabel(e.target.value as string); }}>
                     {
-                        labelNameList.map((o, i) => {
+                        globalLabelNameList.map((o, i) => {
                             return (
                                 <MenuItem key={i + o} value={o}>{o}</MenuItem>
                             )
@@ -64,6 +66,8 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                                 }
                             }
                         }
+
+                        let localLabelNameList = getLabelNameList(o.toolType);
 
                         return (
                             <ListItem key={i + "_label"}>
@@ -101,14 +105,14 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
                                             <DeleteForever />
                                         </IconButton>
                                     </Stack>
-                                    <Select size='small' value={o.label.labelName} onChange={(e) => { 
+                                    <Select fullWidth size='small' value={o.label.labelName} onChange={(e) => { 
                                             if (o.label) 
                                                 o.label.labelName = e.target.value; 
                                             refresh();
                                             setSelectedFeatures(selectedFeatures);
                                         }}>
                                         {
-                                            labelNameList.map((o, i) => {
+                                            localLabelNameList.map((o, i) => {
                                                 return (
                                                     <MenuItem key={i + o} value={o}>{o}</MenuItem>
                                                 )
@@ -126,7 +130,6 @@ function LabelNavigator({ labelNameList, open, onOpenChange }: LabelNavigatorPro
 }
 
 LabelNavigator.defaultProps = {
-    labelNameList: ["DefaultLabel1", "DefaultLabel2"],
     open: false,
     onOpenChange: () => { }
 };

@@ -4,7 +4,7 @@
  * @Date 2021.10.27
  */
 import React, { Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import MapProvider, { MapProviderState } from './MarkerProvider';
+import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
@@ -52,7 +52,7 @@ export interface MarkerProps extends ToolNavigatorProps {
     dziUrl: string;
     readOnly?: boolean;
     toolTypes?: Tools[];
-    labelNameList?: string[];
+    labelNameList?: LabelNameInfo[];
     saveHandler?: (labelList: LabelInfo[]) => void;
     axiosInstance?: AxiosInstance;
 };
@@ -64,6 +64,8 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     const boxRef = useRef();
     const [localLabelInfo, setLocalLabelInfo] = useState(labelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
+
+    const storage_key = LOCAL_STORAGE_KEY + dziUrl;
 
     const getLabel = (toObject: boolean) => {
         let labelList = [];
@@ -86,19 +88,21 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
 
     const onSave = () => {
         let labels = getLabel(true);
-        console.log(labels);
-        if (saveHandler)
+
+        if (saveHandler) {
             saveHandler(labels);
+            localStorage.removeItem(storage_key);
+        }
     };
 
     const onLocalSave = () => {
         let labels = getLabel(false);
         // save to local
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(labels));
+        localStorage.setItem(storage_key, JSON.stringify(labels));
     }
 
     const getLoadData = () => {
-        let data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let data = localStorage.getItem(storage_key);
         if (data && data.length > 2) {
             setOpenConfirm(true);
         }
@@ -106,7 +110,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
 
     const onLocalLoad = () => {
         // get from local
-        let data = localStorage.getItem(LOCAL_STORAGE_KEY);
+        let data = localStorage.getItem(storage_key);
         if (data && data.length > 2) {
             setLocalLabelInfo(JSON.parse(data));
         }
@@ -121,7 +125,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         if (confirm) {
             onLocalLoad();
         } else {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(localLabelInfo || []));
+            localStorage.setItem(storage_key, JSON.stringify(localLabelInfo || []));
         }
     }
 
@@ -163,6 +167,10 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         }
     }, [toolTypes]);
 
+    useEffect(() => {
+        setLocalLabelInfo(labelInfo);
+    }, [labelInfo]);
+
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
 
@@ -171,7 +179,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance}>
+        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
@@ -184,7 +192,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
                     !readOnly &&
                     <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} labelInfo={localLabelInfo} />
                 }
-                <LabelNavigator labelNameList={labelNameList} open={open} onOpenChange={() => {
+                <LabelNavigator open={open} onOpenChange={() => {
                     setOpen(false);
                 }} />
             </Box>
