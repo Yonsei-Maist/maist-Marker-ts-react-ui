@@ -11,6 +11,9 @@ export class DicomObject {
     private highBit: number;
     private photometricInterpretation: string;
 
+    public readonly originWindowWidth: number;
+    public readonly originWindowCenter: number;
+
     public ww: number;
     public wc: number;
     public readonly width: number;
@@ -25,6 +28,8 @@ export class DicomObject {
         this.min = min;
         this.ww = ww;
         this.wc = wc;
+        this.originWindowWidth = ww;
+        this.originWindowCenter = wc;
         this.width = width;
         this.height = height;
         this.uid = uid;
@@ -38,17 +43,17 @@ export class DicomObject {
         let min = this.min * this.slope + this.intercept;
         let max = this.max * this.slope + this.intercept;
 
-        let range = [this.wc - this.ww / 2, this.wc + this.ww / 2];
+        let range = [Math.max(this.wc - this.ww / 2, min), Math.min(this.wc + this.ww / 2, max)];
         for (let i=0;i<this.pixelData.length;i++) {
             let pixelValue = this.convertBit(this.pixelData[i]);
             if (pixelValue < range[0])
-                pixelValue = min;
+                pixelValue = range[0];
             else if (pixelValue > range[1])
-                pixelValue = max;
-            else
-                pixelValue = pixelValue * this.slope + this.intercept;
+                pixelValue = range[1];
+            
+            pixelValue = pixelValue * this.slope + this.intercept;
 
-            let grayscale = Math.round(pixelValue / max * 255);
+            let grayscale = Math.round(pixelValue / range[1] * 255);
             if (this.photometricInterpretation == 'MONOCHROME1') {
                 grayscale = 255 - grayscale;
             }
@@ -63,8 +68,8 @@ export class DicomObject {
     convertBit(origin: number) {
         let value = origin;
         if (this.uid == "1.2.840.10008.1.2.2") {
-            // if data wrotten using big endian
-            // change the msb and lsb
+            // if data was wrotten using big endian
+            // change the msb and lsb (8 bit each)
             let msb = origin & 65280;
             let lsb = origin & 255;
 

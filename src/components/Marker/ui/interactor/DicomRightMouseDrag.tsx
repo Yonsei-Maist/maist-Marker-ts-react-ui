@@ -27,7 +27,7 @@ class DicomRightMouseDrag extends PointerInteraction {
                 evt.originalEvent.preventDefault();
                 this.clicked = true;
                 this.coordinate = evt.coordinate;
-                console.log("bye");
+
                 return true;
             }
 
@@ -40,19 +40,22 @@ class DicomRightMouseDrag extends PointerInteraction {
     handleDragEvent(evt: MapBrowserEvent<UIEvent>) {
 
         if (this.clicked && this.coordinate) {
-            console.log("hi")
             const map = evt.map;
             const dicomObject = map.get(DICOM_OBJECT);
-            dicomObject.ww = 500;
-            dicomObject.wc = 500;
+            dicomObject.ww = dicomObject.ww + (evt.coordinate[0] - this.coordinate[0]);
+            dicomObject.wc = dicomObject.wc + (evt.coordinate[1] - this.coordinate[1]);
             let layers = map.getLayers();
             for (let i in layers.getArray()) {
                 let layerItem = layers.getArray()[i];
 
+                // console.log(evt.coordinate, this.coordinate);
+
                 if (layerItem instanceof ImageLayer) {
-                    let vectorLayer = layerItem as ImageLayer<Static>;
+                    let vectorLayer = layerItem as ImageLayer<ImageCanvasSource>;
                     let source = vectorLayer.getSource();
                     source.refresh();
+                    this.coordinate = evt.coordinate;
+                    break;
                 }
             }
         }
