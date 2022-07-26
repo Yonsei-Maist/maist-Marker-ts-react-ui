@@ -15,6 +15,14 @@ export const Default = () => <div style={{ height: "800px", width: "100%" }}>
     <Marker dziUrl={url}></Marker>
 </div>;
 
+export const Image = () => <div style={{ height: "800px", width: "100%" }}>
+    <Marker dziUrl={"http://localhost:8080/omarker/example/a.jpg"}></Marker>
+</div>;
+
+export const Dicom = () => <div style={{ height: "800px", width: "100%" }}>
+    <Marker dziUrl={"http://localhost:8080/omarker/example/ser1005img01003.dcm"}></Marker>
+</div>;
+
 export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
     <Marker labelNameList={[
         {toolType: Tools.Ellipse, labelNameList: ["CustomLabel1", "CustomLabel2"]},

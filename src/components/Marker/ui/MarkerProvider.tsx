@@ -1,10 +1,9 @@
-import { Feature, Graticule, Map, View } from 'ol';
+import { Feature, Graticule, Map } from 'ol';
 import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
-import dziReader, { makeLayer } from "../../../api/DziReader";
+import dziReader, { makeLayer } from "../../../api/SourceReader";
 
 import { defaults } from 'ol/control';
-import { Tile } from 'ol/layer';
-import { Vector, Zoomify } from 'ol/source';
+import { Vector } from 'ol/source';
 
 import MapContext, { MapObject } from '../context/MapContext';
 import {LabelContext, LabelContextObject } from '../context';
@@ -14,7 +13,7 @@ import { Geometry } from 'ol/geom';
 import { Stroke } from 'ol/style';
 import BaseMark from './mark/BaseMark';
 import { AxiosInstance } from 'axios';
-import { Alert, Box, CircularProgress } from '@mui/material';
+import { Alert, CircularProgress } from '@mui/material';
 import { Tools } from './ToolNavigator';
 
 export interface MapProviderState {
@@ -174,22 +173,8 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList }: MapProv
 
     useEffect(() => {
         if (data) {
-            var layer = new Tile();
-
-            let info = makeLayer(dziUrl, data, axiosInstance);
-
-            var source = new Zoomify({
-                url: info.url,
-                size: [info.width, info.height],
-                tileSize: info.tileSize,
-                crossOrigin: "anonymous"
-            });
-
-            source.setTileUrlFunction(info.tileUrlFunction);
-            source.setTileLoadFunction(info.tileLoadFunction);
-
-            layer.setExtent([0, -info.height, info.width, 0]);
-            layer.setSource(source);
+            let map = mapObj.map;
+            let sourceData = makeLayer(map, dziUrl, data, axiosInstance);
 
             let graticuleLayer = new Graticule({
                 // the style to use for the lines, optional.
@@ -201,21 +186,15 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList }: MapProv
                 showLabels: false,
                 wrapX: false,
             });
-            graticuleLayer.setVisible(false);
-            let map = mapObj.map;
-            map?.addLayer(layer);
-            map?.addLayer(graticuleLayer);
-            map?.setView(
-                new View({
-                    maxResolution: layer.getSource().getTileGrid().getResolutions()[0],
-                    ///resolutions: resolution,
-                    extent: layer.getExtent(),
-                    constrainOnlyCenter: true,
-                    zoom: 2
-                })
-            );
 
-            map?.getView().fit(layer.getExtent() as number[], { size: map.getSize() });
+            graticuleLayer.setVisible(false);
+            map?.addLayer(sourceData.layer);
+            map?.addLayer(graticuleLayer);
+            map?.setView(sourceData.view);
+            map.getViewport().addEventListener('contextmenu', function (evt) {
+                evt.preventDefault();
+            });
+
             setMapObj({...mapObj, isLoaded: true, select, remove, unselect, clearSelection});
         }
     }, [data]);
