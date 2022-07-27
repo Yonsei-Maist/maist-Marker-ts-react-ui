@@ -30,9 +30,10 @@ type MapProviderProps = {
     children?: React.ReactNode;
     axiosInstance?: AxiosInstance;
     labelNameList: LabelNameInfo[];
+    attributionContainer?: HTMLElement;
 };
 
-function MapProvider({ dziUrl, children, axiosInstance, labelNameList }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance, labelNameList, attributionContainer }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
     const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
     const [state, refetch] = dziReader(dziUrl, [], axiosInstance);
@@ -161,8 +162,9 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList }: MapProv
     }
 
     useEffect(() => {
+        console.log(attributionContainer);
         const map = new Map({
-            controls: defaults({ zoom: false, rotate: false }).extend([]),
+            controls: defaults({ zoom: false, rotate: false}).extend([]),
             target: 'map'
         });
 

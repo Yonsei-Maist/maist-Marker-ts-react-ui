@@ -8,23 +8,13 @@ import { Zoomify } from "ol/source";
 import Static from "ol/source/ImageStatic";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
-import dicomReader from "../lib/dicomReader";
+import dicomReader, { DicomObject } from "../lib/dicomReader";
 import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/interactor/DicomRightMouseDrag";
 import ImageCanvasSource from "ol/source/ImageCanvas";
 
 interface SourceData {
     layer: Layer;
     view: View;
-}
-
-interface DicomObject {
-    pixelData: Uint16Array;
-    slope: number;
-    interceptor: number;
-    max: number;
-    min: number;
-    ww: number;
-    wc: number;
 }
 
 function parseDzi(map: Map, path:string, data:any, axiosInstance?: AxiosInstance) {
@@ -131,7 +121,7 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
     let dicomData = dicomReader(data);    
     const extent = [0, 0, dicomData.width, dicomData.height];
     // const extent = [0, 0, 256, 256];
-    const worldExtent = [-dicomData.width * 4, -dicomData.height * 4, dicomData.width * 4, dicomData.height * 4];
+    const worldExtent = [-dicomData.width * 100, -dicomData.height * 100, dicomData.width * 100, dicomData.height * 100];
     const projection = new Projection({  // custom project to show Static Image
         code: 'xkcd-image',
         units: 'pixels',
@@ -144,40 +134,37 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
     let source = new ImageCanvasSource({
         projection: projection, //'EPSG:3857',
         canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
+            const dicomData = map.get(DICOM_OBJECT) as DicomObject;
+            
+            dicomData.drawing();
+            if (dicomData.redrawingCanvas == undefined) {
+                dicomData.redrawingCanvas = document.createElement("canvas");
+            }
 
-            const dicomData = map.get(DICOM_OBJECT);
-            
-            const canvasDicom = document.createElement("canvas");
-            const contextDicom = canvasDicom.getContext("2d");
-            
-            canvasDicom.width = dicomData.width;
-            canvasDicom.height = dicomData.height;
+            if (Math.ceil(dicomData.redrawingCanvas.width) != Math.ceil(size[0]) || Math.ceil(dicomData.redrawingCanvas.height) != Math.ceil(size[1])) {
+                dicomData.redrawingCanvas.width = size[0];
+                dicomData.redrawingCanvas.height = size[1];
+                dicomData.redrawingContext  = dicomData.redrawingCanvas.getContext('2d');
+            }
+        
 
-            let imageData = contextDicom.createImageData(canvasDicom.width, canvasDicom.height);
-            
-            dicomData.drawing(imageData.data);
-            contextDicom.putImageData(imageData, 0, 0);
-            
-            const canvas = document.createElement("canvas");
-            canvas.width = size[0];
-            canvas.height = size[1];
-            var ctx = canvas.getContext('2d');
             var canvasOrigin = map.getPixelFromCoordinate([extent[0], extent[3]]);
             var mapExtent = map.getView().calculateExtent(map.getSize())
             var mapOrigin = map.getPixelFromCoordinate([mapExtent[0], mapExtent[3]]);
             var delta = [mapOrigin[0] - canvasOrigin[0], mapOrigin[1] - canvasOrigin[1]]
             var a1 = map.getPixelFromCoordinate([0, 0]);
             var a2 = map.getPixelFromCoordinate([dicomData.width, dicomData.height]);
-            
-            ctx.drawImage(canvasDicom,
-                a1[0] + delta[0], a1[1] + delta[1], 
-                Math.abs(a2[0]-a1[0]), Math.abs(a1[1]-a2[1])
-            );
+            // ctx.clearRect(0, 0, size[0], size[1]);
 
-            //source.setAttributions('ww: ' + dicomData.ww + ', wc: ' + dicomData.wc);
+            dicomData.retouchX = a1[0] + delta[0];
+            dicomData.retouchY = a1[1] + delta[1];
+            dicomData.retouchWidth = Math.abs(a2[0]-a1[0]);
+            dicomData.retouchHeight = Math.abs(a1[1]-a2[1]);
 
-            // ctx.fillRect()
-            return canvas;
+            dicomData.retouch();
+            source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
+
+            return dicomData.redrawingCanvas;
         }
     });
 

@@ -8,13 +8,15 @@ import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, styled } from '@mui/material';
+import { Box, Card, CardContent, IconButton, styled } from '@mui/material';
 import { ArrowCircleLeft } from '@mui/icons-material';
 import PaletteNavigator from './PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
 import BaseMark from './mark/BaseMark';
 import Confirm from './Confirm';
 import { AxiosInstance } from 'axios';
+
+import 'ol/ol.css';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -62,6 +64,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
     const boxRef = useRef();
+    const attributionRef = useRef();
     const [localLabelInfo, setLocalLabelInfo] = useState(labelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -179,7 +182,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList}>
+        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList} attributionContainer={attributionRef.current}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
@@ -195,6 +198,8 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
                 <LabelNavigator open={open} onOpenChange={() => {
                     setOpen(false);
                 }} />
+                <Card ref={attributionRef}>
+                </Card>
             </Box>
             <Confirm open={openConfirm} title={"로컬 데이터 확인"} content={"로컬에 저장된 데이터가 발견되었습니다. 불러오시겠습니까?"} onHandleOpen={onHandleOpen} onHandleConfirm={onHandleLocalLoad} />
         </MapProvider>

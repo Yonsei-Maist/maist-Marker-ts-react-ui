@@ -11,6 +11,9 @@ export class DicomObject {
     private highBit: number;
     private photometricInterpretation: string;
 
+    private context: CanvasRenderingContext2D;
+    private imageData: ImageData;
+
     public readonly originWindowWidth: number;
     public readonly originWindowCenter: number;
 
@@ -18,6 +21,15 @@ export class DicomObject {
     public wc: number;
     public readonly width: number;
     public readonly height: number;
+    public readonly memoryCanvas: HTMLCanvasElement;
+
+    public redrawingCanvas: HTMLCanvasElement;
+    public redrawingContext: CanvasRenderingContext2D;
+
+    public retouchX: number;
+    public retouchY: number;
+    public retouchWidth: number;
+    public retouchHeight: number;
 
     constructor(pixelData: Uint16Array | Uint32Array, slope: number, intercept: number, max: number, min: number, 
             ww: number, wc: number, width: number, height: number, uid:string, bitStored: number, highBit: number, photometricInterpretation: string) {
@@ -36,33 +48,76 @@ export class DicomObject {
         this.bitStored = bitStored;
         this.highBit = highBit;
         this.photometricInterpretation = photometricInterpretation;
+        this.memoryCanvas = document.createElement("canvas");
+        this.createContext();
+        this.redrawingCanvas = undefined;
+        this.redrawingContext = undefined;
+    }
+    
+    createContext() {
+        this.memoryCanvas.width = this.width;
+        this.memoryCanvas.height = this.height;
+        this.context = this.memoryCanvas.getContext("2d");
+        this.imageData = this.context.createImageData(this.memoryCanvas.width, this.memoryCanvas.height);
     }
 
-    drawing(pixels: Uint8ClampedArray) {
+    drawing() {
+        let range = [Math.max(this.wc - this.ww / 2, this.min), this.wc + this.ww / 2];
+        var buf = new ArrayBuffer(this.imageData.data.length);
+        var pixels = new Uint8ClampedArray(buf);
+        var data = new Uint32Array(buf);
+        data[1] = 0x0b0a0c0d;
 
-        let min = this.min * this.slope + this.intercept;
-        let max = this.max * this.slope + this.intercept;
-
-        let range = [Math.max(this.wc - this.ww / 2, min), Math.min(this.wc + this.ww / 2, max)];
-        for (let i=0;i<this.pixelData.length;i++) {
-            let pixelValue = this.convertBit(this.pixelData[i]);
-            if (pixelValue < range[0])
-                pixelValue = range[0];
-            else if (pixelValue > range[1])
-                pixelValue = range[1];
-            
-            pixelValue = pixelValue * this.slope + this.intercept;
-
-            let grayscale = Math.round(pixelValue / range[1] * 255);
-            if (this.photometricInterpretation == 'MONOCHROME1') {
-                grayscale = 255 - grayscale;
-            }
-
-            pixels[i * 4] = grayscale; // Red value
-            pixels[(i * 4)+1] = grayscale; // Green value
-            pixels[(i * 4)+2] = grayscale; // Blue value
-            pixels[(i * 4)+3] = 255; // Alpha (opacity)
+        var isLittleEndian = true;
+        if (buf[4] === 0x0a && buf[5] === 0x0b && buf[6] === 0x0c &&
+            buf[7] === 0x0d) {
+            isLittleEndian = false;
         }
+
+        function to32bit(isLittleEndian: boolean, value: number) {
+            if (isLittleEndian) {
+                return (255 << 24) |    // alpha
+                    (value << 16) |    // blue
+                    (value << 8) |    // green
+                    value;            // red
+            } else {
+                return (value << 24) |    // red
+                    (value << 16) |    // green
+                    (value << 8) |    // blue
+                    255; // alpha
+            }
+        }
+
+        for (var y = 0; y < this.height; ++y) {
+            for (var x = 0; x < this.width; ++x) {
+                let i = y * this.width + x;
+                
+                let pixelValue = this.convertBit(this.pixelData[i]);
+                if (pixelValue < range[0])
+                    pixelValue = range[0];
+                else if (pixelValue > range[1])
+                    pixelValue = range[1];
+                
+                pixelValue = pixelValue * this.slope + this.intercept;
+
+                let grayscale = Math.round(pixelValue / range[1] * 255);
+                if (this.photometricInterpretation == 'MONOCHROME1') {
+                    grayscale = 255 - grayscale;
+                }
+
+                data[i] = to32bit(isLittleEndian, grayscale);
+            }
+        }
+
+        this.imageData.data.set(pixels);
+        this.context.putImageData(this.imageData, 0, 0);
+    }
+
+    retouch() {
+        this.redrawingContext.drawImage(this.memoryCanvas,
+            this.retouchX, this.retouchY, 
+            this.retouchWidth, this.retouchHeight
+        );
     }
 
     convertBit(origin: number) {
