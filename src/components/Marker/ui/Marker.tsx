@@ -210,7 +210,8 @@ const RefMarker = React.forwardRef<MarkerState, MarkerProps>(Marker);
 
 RefMarker.defaultProps = {
     dziUrl: "",
-    readOnly: false
+    readOnly: false,
+    labelNameList: []
 };
 
 export {

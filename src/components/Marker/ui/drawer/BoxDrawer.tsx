@@ -70,8 +70,9 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
     createDraw(source:Vector<Geometry>) {
         this.draw = new Draw({
             source: source,
-            freehand: true,
+            freehand: false,
             type: "Circle",
+            freehandCondition: this.condition,
             geometryFunction: createBox()
         });
 

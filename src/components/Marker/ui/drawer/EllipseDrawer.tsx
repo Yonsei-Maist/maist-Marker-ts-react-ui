@@ -81,8 +81,9 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
     createDraw(source:Vector<Geometry>) {
         this.draw = new Draw({
             source: source,
-            freehand: true,
+            freehand: false,
             type: "Circle",
+            freehandCondition: this.condition,
             geometryFunction: function (coordinates: Coordinate[], geometry?, projection?) {
                 let geometryCollection: any = geometry;
                 

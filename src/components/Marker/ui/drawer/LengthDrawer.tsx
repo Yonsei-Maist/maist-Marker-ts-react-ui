@@ -48,6 +48,7 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
             source: source,
             type: "LineString",
             freehand: false,
+            condition: this.condition,
             style: (feature) => {
                 return measureStyleFunciton(feature, this.formatLength);
             }

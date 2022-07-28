@@ -39,6 +39,7 @@ class PencilDrawer extends BasicDrawer<PencilMark> {
         this.draw = new Draw({
             source: source,
             type: "Polygon",
+            condition: this.condition,
             freehand: true
         });
 

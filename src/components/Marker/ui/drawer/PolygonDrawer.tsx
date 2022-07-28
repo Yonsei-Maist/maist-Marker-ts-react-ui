@@ -48,6 +48,7 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
         this.draw = new Draw({
             source: source,
             type: "Polygon",
+            condition: this.condition,
             freehand: false
         });
 

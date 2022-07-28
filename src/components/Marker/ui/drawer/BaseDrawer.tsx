@@ -1,4 +1,4 @@
-import { Feature } from "ol";
+import { Feature, MapBrowserEvent } from "ol";
 import { Geometry, MultiPoint, Polygon, SimpleGeometry } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Vector } from "ol/source";
@@ -11,6 +11,11 @@ class BasicDrawer<T extends BaseMark> {
     modify:Modify;
 
     constructor() {
+    }
+
+    condition(e: MapBrowserEvent<UIEvent>) {
+        let event = e.originalEvent as PointerEvent;
+        return event.button == 0; // left only
     }
 
     setDrawEvent() {

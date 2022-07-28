@@ -45,6 +45,7 @@ class AreaDrawer extends BasicDrawer<AreaMark> {
             source: source,
             type: "Polygon",
             freehand: false,
+            condition: this.condition,
             style: (feature) => {
                 return measureStyleFunciton(feature, this.formatArea);
             }
