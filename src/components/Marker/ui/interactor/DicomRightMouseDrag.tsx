@@ -51,8 +51,8 @@ class DicomRightMouseDrag extends PointerInteraction {
         if (this.clicked && this.coordinate) {
             const map = evt.map;
             const dicomObject = map.get(DICOM_OBJECT) as DicomObject;
-            dicomObject.ww = this.windowWidth + (evt.coordinate[0] - this.coordinate[0]);
-            dicomObject.wc = this.windowCenter + (evt.coordinate[1] - this.coordinate[1]);
+            dicomObject.ww = this.windowWidth + (evt.coordinate[0] - this.coordinate[0]) / 1000;
+            dicomObject.wc = this.windowCenter + (evt.coordinate[1] - this.coordinate[1]) / 1000;
             let layers = map.getLayers();
             if (dicomObject.ww < 0)
                 dicomObject.ww = 0;
@@ -60,15 +60,10 @@ class DicomRightMouseDrag extends PointerInteraction {
             for (let i in layers.getArray()) {
                 let layerItem = layers.getArray()[i];
 
-                // console.log(evt.coordinate, this.coordinate);
-
                 if (layerItem instanceof ImageLayer) {
                     let vectorLayer = layerItem as ImageLayer<ImageCanvasSource>;
                     let source = vectorLayer.getSource();
-                    // this.coordinate = evt.coordinate;
-                    // source.refresh();
                     source.changed();
-                    //dicomObject.retouch();
                     break;
                 }
             }

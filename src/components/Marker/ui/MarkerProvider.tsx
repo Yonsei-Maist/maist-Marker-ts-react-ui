@@ -162,7 +162,6 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, attributi
     }
 
     useEffect(() => {
-        console.log(attributionContainer);
         const map = new Map({
             controls: defaults({ zoom: false, rotate: false}).extend([]),
             target: 'map'
@@ -196,7 +195,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, attributi
             map.getViewport().addEventListener('contextmenu', function (evt) {
                 evt.preventDefault();
             });
-
+            
             setMapObj({...mapObj, isLoaded: true, select, remove, unselect, clearSelection});
         }
     }, [data]);

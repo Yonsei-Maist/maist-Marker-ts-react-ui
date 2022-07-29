@@ -87,7 +87,7 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
     const extent = [0, 0, 256, 256];
     const worldExtent = [-1024, -1024, 1024, 1024];
     const projection = new Projection({  // custom project to show Static Image
-        code: 'xkcd-image',
+        code: 'normal-image',
         units: 'pixels',
         extent: extent,
         worldExtent: worldExtent
@@ -118,21 +118,13 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
 function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstance) {
     // TODO: get width, height from image data to fit extent and worldExtent
 
-    let dicomData = dicomReader(data);    
-    const extent = [0, 0, dicomData.width, dicomData.height];
-    // const extent = [0, 0, 256, 256];
-    const worldExtent = [-dicomData.width * 100, -dicomData.height * 100, dicomData.width * 100, dicomData.height * 100];
-    const projection = new Projection({  // custom project to show Static Image
-        code: 'xkcd-image',
-        units: 'pixels',
-        extent: extent,
-        worldExtent: worldExtent
-    });
+    let dicomData = dicomReader(data);
 
     map.set(DICOM_OBJECT, dicomData);
     map.addInteraction(new DicomRightMouseDrag());
+    let newSize = [dicomData.width * 1000, dicomData.height * 1000];
     let source = new ImageCanvasSource({
-        projection: projection, //'EPSG:3857',
+        //projection: projection, //'EPSG:3857',
         canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
             const dicomData = map.get(DICOM_OBJECT) as DicomObject;
             
@@ -146,14 +138,14 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
                 dicomData.redrawingCanvas.height = size[1];
                 dicomData.redrawingContext  = dicomData.redrawingCanvas.getContext('2d');
             }
-        
 
             var canvasOrigin = map.getPixelFromCoordinate([extent[0], extent[3]]);
             var mapExtent = map.getView().calculateExtent(map.getSize())
             var mapOrigin = map.getPixelFromCoordinate([mapExtent[0], mapExtent[3]]);
             var delta = [mapOrigin[0] - canvasOrigin[0], mapOrigin[1] - canvasOrigin[1]]
+            
             var a1 = map.getPixelFromCoordinate([0, 0]);
-            var a2 = map.getPixelFromCoordinate([dicomData.width, dicomData.height]);
+            var a2 = map.getPixelFromCoordinate([newSize[0], newSize[1]]);
             // ctx.clearRect(0, 0, size[0], size[1]);
 
             dicomData.retouchX = a1[0] + delta[0];
@@ -163,7 +155,7 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
 
             dicomData.retouch();
             source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
-
+            
             return dicomData.redrawingCanvas;
         }
     });
@@ -171,14 +163,15 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
     let layer = new ImageLayer({
         source: source
     });
-
+    
     let view = new View({
-        center: [dicomData.width / 2, -dicomData.height / 2], //[dicomData.width, dicomData.height],
+        center: [newSize[0] / 2, -newSize[1] / 2],
         // maxResolution: source.getResolutions()[0],
-        //extent: extent, //source.getImageExtent(),
-        projection:projection,
+        //extent: worldExtent, //source.getImageExtent(),
+       // projection:projection,
+        //extent: layer.getExtent(),
         constrainOnlyCenter: true,
-        zoom: 2
+        zoom: 6
     });
     
     return {layer, view}
