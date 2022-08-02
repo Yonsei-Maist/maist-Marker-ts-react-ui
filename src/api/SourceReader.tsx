@@ -131,12 +131,16 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
             dicomData.drawing();
             if (dicomData.redrawingCanvas == undefined) {
                 dicomData.redrawingCanvas = document.createElement("canvas");
-            }
-
-            if (Math.ceil(dicomData.redrawingCanvas.width) != Math.ceil(size[0]) || Math.ceil(dicomData.redrawingCanvas.height) != Math.ceil(size[1])) {
                 dicomData.redrawingCanvas.width = size[0];
                 dicomData.redrawingCanvas.height = size[1];
-                dicomData.redrawingContext  = dicomData.redrawingCanvas.getContext('2d');
+                dicomData.redrawingContext = dicomData.redrawingCanvas.getContext('2d');
+                
+                dicomData.extent = extent;
+            }
+
+            if (dicomData.extent[0] != extent[0]) {
+                dicomData.redrawingContext.clearRect(0, 0, size[0], size[1]);
+                dicomData.extent = extent;
             }
 
             var canvasOrigin = map.getPixelFromCoordinate([extent[0], extent[3]]);
@@ -152,10 +156,8 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
             dicomData.retouchY = a1[1] + delta[1];
             dicomData.retouchWidth = Math.abs(a2[0]-a1[0]);
             dicomData.retouchHeight = Math.abs(a1[1]-a2[1]);
-
             dicomData.retouch();
             source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
-            
             return dicomData.redrawingCanvas;
         }
     });

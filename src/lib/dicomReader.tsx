@@ -31,6 +31,8 @@ export class DicomObject {
     public retouchWidth: number;
     public retouchHeight: number;
 
+    public extent: number[];
+
     constructor(pixelData: Uint16Array | Uint32Array, slope: number, intercept: number, max: number, min: number, 
             ww: number, wc: number, width: number, height: number, uid:string, bitStored: number, highBit: number, photometricInterpretation: string) {
         this.pixelData = pixelData;
@@ -100,7 +102,7 @@ export class DicomObject {
                 
                 pixelValue = pixelValue * this.slope + this.intercept;
 
-                let grayscale = Math.round(pixelValue / range[1] * 255);
+                let grayscale = Math.round((pixelValue - range[0]) / (range[1] - range[0]) * 255);
                 if (this.photometricInterpretation == 'MONOCHROME1') {
                     grayscale = 255 - grayscale;
                 }
