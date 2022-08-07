@@ -107,7 +107,7 @@ export class DicomObject {
                 data[i] = to32bit(isLittleEndian, grayscale);
             }
         }
-
+        
         this.imageData.data.set(pixels);
         this.context.putImageData(this.imageData, 0, 0);
     }

@@ -1,5 +1,5 @@
 import { Feature } from "ol";
-import { Geometry, LineString, Point, Polygon, SimpleGeometry } from "ol/geom";
+import { LineString, Point, Polygon, SimpleGeometry } from "ol/geom";
 import RenderFeature from "ol/render/Feature";
 import { getArea, getLength } from "ol/sphere";
 import { Style, Fill, Stroke, RegularShape, Text } from "ol/style";

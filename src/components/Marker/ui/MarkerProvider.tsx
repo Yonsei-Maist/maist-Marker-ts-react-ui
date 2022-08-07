@@ -184,7 +184,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, attributi
                     width: 2,
                     lineDash: [0.5, 4],
                 }),
-                showLabels: false,
+                showLabels: true,
                 wrapX: false,
             });
 

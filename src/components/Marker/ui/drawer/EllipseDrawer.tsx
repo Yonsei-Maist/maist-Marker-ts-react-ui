@@ -1,15 +1,12 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
-import { primaryAction, platformModifierKeyOnly, always, never, mouseOnly, shiftKeyOnly } from "ol/events/condition";
-import { Geometry, Circle, Polygon, Point, GeometryCollection, SimpleGeometry, LineString, MultiPoint } from "ol/geom";
+import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
+import { Geometry, Circle, Polygon, Point, GeometryCollection, LineString, MultiPoint } from "ol/geom";
 import { Draw, Select, Modify } from "ol/interaction";
 import { Vector } from "ol/source";
 import { TOOL_TYPE, Tools, TOOL_MEMO } from "../ToolNavigator";
 import BasicDrawer from "./BaseDrawer";
-import { circular, fromCircle } from 'ol/geom/Polygon'
-import { calculateCenter } from "./BoxDrawer";
-import { transform } from "ol/proj";
-import { getDistance } from "ol/sphere";
+import { fromCircle } from 'ol/geom/Polygon'
 import { getCenter } from "ol/extent";
 import { Style } from "ol/style";
 import BaseMark from "../mark/BaseMark";

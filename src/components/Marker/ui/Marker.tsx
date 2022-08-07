@@ -8,7 +8,7 @@ import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
-import { Box, Card, CardContent, IconButton, styled } from '@mui/material';
+import { Box, Card, IconButton, styled } from '@mui/material';
 import { ArrowCircleLeft } from '@mui/icons-material';
 import PaletteNavigator from './PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
