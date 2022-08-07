@@ -9,18 +9,18 @@ export default {
     component: Marker,
 };
 
-const url = "http://localhost:8080/omarker/example/ser1005img01003.dzi"; //"https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
+const url = "https://maist.yonsei.ac.kr/example/I98.dcm"; //"https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
 
 export const Default = () => <div style={{ height: "800px", width: "100%" }}>
-    <Marker dziUrl={url}></Marker>
+    <Marker dziUrl={"https://openseadragon.github.io/example-images/highsmith/highsmith.dzi"}></Marker>
 </div>;
 
 export const Image = () => <div style={{ height: "800px", width: "100%" }}>
-    <Marker dziUrl={"http://localhost:8080/omarker/example/a.jpg"}></Marker>
+    <Marker dziUrl={"https://maist.yonsei.ac.kr/example/stephans_quintet.jpeg"}></Marker>
 </div>;
 
 export const Dicom = () => <div style={{ height: "800px", width: "100%" }}>
-    <Marker dziUrl={"http://localhost:8080/omarker/example/ser1005img01003.dcm"}></Marker>
+    <Marker dziUrl={url}></Marker>
 </div>;
 
 export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
