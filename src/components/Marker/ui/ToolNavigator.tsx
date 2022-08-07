@@ -1,8 +1,8 @@
 
 import React , { useEffect, useContext, useRef, useState } from 'react';
-import { Modify, Snap, Translate, Select } from 'ol/interaction';
 import { Vector } from 'ol/source';
 import { Vector as VectorLayer } from 'ol/layer'
+import { Select, Modify, Snap, Translate } from 'ol/interaction';
 
 import MapContext, { MapObject } from '../context/MapContext';
 import Geometry from 'ol/geom/Geometry';

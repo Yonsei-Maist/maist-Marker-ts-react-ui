@@ -8,9 +8,11 @@ import { Zoomify } from "ol/source";
 import Static from "ol/source/ImageStatic";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
-import dicomReader, { DicomObject } from "../lib/dicomReader";
+import dicomReader, { DicomObject, fitSize } from "../lib/dicomReader";
 import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/interactor/DicomRightMouseDrag";
 import ImageCanvasSource from "ol/source/ImageCanvas";
+
+import sizeOf from 'buffer-image-size';
 
 interface SourceData {
     layer: Layer;
@@ -72,7 +74,6 @@ function parseDzi(map: Map, path:string, data:any, axiosInstance?: AxiosInstance
 
     let view = new View({
         maxResolution: layer.getSource().getTileGrid().getResolutions()[0],
-        ///resolutions: resolution,
         extent: layer.getExtent(),
         constrainOnlyCenter: true,
         zoom: 2
@@ -83,9 +84,9 @@ function parseDzi(map: Map, path:string, data:any, axiosInstance?: AxiosInstance
 
 function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
 
-    // TODO: get width, height from image data to fit extent and worldExtent
-    const extent = [0, 0, 256, 256];
-    const worldExtent = [-1024, -1024, 1024, 1024];
+    const imageInfo = sizeOf(Buffer.from(data));
+    const extent = [0, 0, imageInfo.width, imageInfo.height];
+    const worldExtent = [-imageInfo.width, -imageInfo.height, imageInfo.width, imageInfo.height];
     const projection = new Projection({  // custom project to show Static Image
         code: 'normal-image',
         units: 'pixels',
@@ -104,7 +105,6 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
     });
 
     let view = new View({
-        // maxResolution: source.getResolutions()[0],
         center: getCenter(extent),
         extent: source.getImageExtent(),
         projection: projection,
@@ -116,15 +116,12 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
 }
 
 function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstance) {
-    // TODO: get width, height from image data to fit extent and worldExtent
-
-    let dicomData = dicomReader(data);
+    let dicomData = new DicomObject(data);
 
     map.set(DICOM_OBJECT, dicomData);
     map.addInteraction(new DicomRightMouseDrag());
-    let newSize = [dicomData.width * 1000, dicomData.height * 1000];
+    let newSize = fitSize(data.width, data.height);
     let source = new ImageCanvasSource({
-        //projection: projection, //'EPSG:3857',
         canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
             const dicomData = map.get(DICOM_OBJECT) as DicomObject;
             
@@ -150,7 +147,6 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
             
             var a1 = map.getPixelFromCoordinate([0, 0]);
             var a2 = map.getPixelFromCoordinate([newSize[0], newSize[1]]);
-            // ctx.clearRect(0, 0, size[0], size[1]);
 
             dicomData.retouchX = a1[0] + delta[0];
             dicomData.retouchY = a1[1] + delta[1];
@@ -168,10 +164,6 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
     
     let view = new View({
         center: [newSize[0] / 2, -newSize[1] / 2],
-        // maxResolution: source.getResolutions()[0],
-        //extent: worldExtent, //source.getImageExtent(),
-       // projection:projection,
-        //extent: layer.getExtent(),
         constrainOnlyCenter: true,
         zoom: 6
     });
@@ -200,8 +192,21 @@ function ReadFile(url:string, dev: React.DependencyList, axiosInstance?: AxiosIn
             data: response.data as ResultData
         } as ResponseMessage;
     }
+    
+    async function getDicom() {
+        const image = await dicomReader(url);
+        
+        return {
+            result: image ? "success":"fail",
+            data: image
+        }
+    }
 
-    return useAsync(getFile, dev);
+    if (url.indexOf(".dcm") > -1) {
+        return useAsync(getDicom, dev);
+    } else {
+        return useAsync(getFile, dev);
+    }
 }
 
 export default ReadFile
