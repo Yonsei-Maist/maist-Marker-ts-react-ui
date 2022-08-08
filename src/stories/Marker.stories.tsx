@@ -9,7 +9,7 @@ export default {
     component: Marker,
 };
 
-const url = "https://maist.yonsei.ac.kr/example/I98.dcm"; //"https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
+const url = "https://maist.yonsei.ac.kr/example/foot.dcm"; //"https://maist.yonsei.ac.kr/example/faae04da-8627-4ae8-823e-fe3f002c8e93.dzi"
 
 export const Default = () => <div style={{ height: "800px", width: "100%" }}>
     <Marker dziUrl={"https://openseadragon.github.io/example-images/highsmith/highsmith.dzi"}></Marker>

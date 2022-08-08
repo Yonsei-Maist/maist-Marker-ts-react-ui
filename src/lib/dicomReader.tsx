@@ -7,7 +7,6 @@ cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 
 export class DicomObject {
-    private imageFrame: any;
     private slope: number;
     private intercept: number;
     private data: any;
@@ -56,7 +55,7 @@ export class DicomObject {
     createContext() {
         this.memoryCanvas.width = this.width;
         this.memoryCanvas.height = this.height;
-        this.context = this.memoryCanvas.getContext("2d");
+        this.context = this.memoryCanvas.getContext("2d", {alpha: false});
         this.imageData = this.context.createImageData(this.memoryCanvas.width, this.memoryCanvas.height);
     }
 
@@ -118,26 +117,6 @@ export class DicomObject {
             this.retouchWidth, this.retouchHeight
         );
     }
-
-    // convertBit(origin: number) {
-    //     let value = origin;
-    //     if (this.uid == "1.2.840.10008.1.2.2") {
-    //         // if data was wrotten using big endian
-    //         // change the msb and lsb (8 bit each)
-    //         let msb = origin & 65280;
-    //         let lsb = origin & 255;
-
-    //         lsb = lsb << 8;
-    //         msb = msb >> 8;
-
-    //         value = lsb | msb;
-    //     }
-
-    //     let stored = Math.pow(2, this.bitStored) - 1;
-    //     stored = stored << (this.highBit - this.bitStored + 1);
-
-    //     return value;
-    // }
 }
 
 export function fitSize(width: number, height: number) {

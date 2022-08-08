@@ -4,7 +4,7 @@ import { getCenter } from "ol/extent";
 import { Layer, Tile } from "ol/layer";
 import ImageLayer from "ol/layer/Image";
 import { Projection } from "ol/proj";
-import { Zoomify } from "ol/source";
+import { ImageArcGISRest, ImageWMS, Zoomify } from "ol/source";
 import Static from "ol/source/ImageStatic";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
@@ -12,6 +12,7 @@ import dicomReader, { DicomObject, fitSize } from "../lib/dicomReader";
 import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/interactor/DicomRightMouseDrag";
 
 import sizeOf from 'buffer-image-size';
+import ImageCanvasSource from "ol/source/ImageCanvas";
 
 interface SourceData {
     layer: Layer;
@@ -106,109 +107,118 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
     return {layer, view}
 }
 
-function parseDicom(map: Map, path: string, data: any, axiosInstance?: AxiosInstance) {
+// function parseDicom(map: Map, path: string, data: any, axiosInstance?: AxiosInstance) {
 
-    let dicomData = new DicomObject(data);
-
-    map.set(DICOM_OBJECT, dicomData);
-
-    let newSize = fitSize(data.width, data.height);
-
-    const setImage = (image: HTMLImageElement) => {
-        const dicomData = map.get(DICOM_OBJECT) as DicomObject;
-        dicomData.drawing();
-        image.src = dicomData.memoryCanvas.toDataURL();
-    }
-    
-    let source = new Static({
-        url: path,
-        imageLoadFunction: (wrapper, url) => {
-            let image = wrapper.getImage() as HTMLImageElement;
-            const dicomData = map.get(DICOM_OBJECT) as DicomObject;
-            setImage(image);
-            source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
-        },
-        imageExtent: [0, -newSize[1], newSize[0], 0]
-    });
-
-    source.on("change", (e) => {
-        let image = e.target.image_.getImage() as HTMLImageElement;
-        setImage(image);
-    });
-
-    map.addInteraction(new DicomRightMouseDrag(source));
-
-    let layer = new ImageLayer({
-        source: source
-    });
-
-    let view = new View({
-        center: getCenter(source.getImageExtent()),
-        //extent: source.getImageExtent(),
-        constrainOnlyCenter: true,
-        zoom: 6
-    });
-    
-    return {layer, view}
-}
-
-// function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstance) {
 //     let dicomData = new DicomObject(data);
 
 //     map.set(DICOM_OBJECT, dicomData);
-//     map.addInteraction(new DicomRightMouseDrag());
+
 //     let newSize = fitSize(data.width, data.height);
-//     let source = new ImageCanvasSource({
-//         canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
-//             const dicomData = map.get(DICOM_OBJECT) as DicomObject;
-            
-//             dicomData.drawing();
-//             if (dicomData.redrawingCanvas == undefined) {
-//                 dicomData.redrawingCanvas = document.createElement("canvas");
-//                 dicomData.redrawingCanvas.width = size[0];
-//                 dicomData.redrawingCanvas.height = size[1];
-//                 dicomData.redrawingContext = dicomData.redrawingCanvas.getContext('2d');
-                
-//                 dicomData.extent = extent;
-//             }
 
-//             if (dicomData.extent[0] != extent[0]) {
-//                 dicomData.redrawingContext.clearRect(0, 0, size[0], size[1]);
-//                 dicomData.extent = extent;
-//             }
+//     const setImage = (image: HTMLImageElement) => {
+//         const dicomData = map.get(DICOM_OBJECT) as DicomObject;
+//         dicomData.drawing();
+//         image.src = dicomData.memoryCanvas.toDataURL();
+//     }
+    
 
-//             var canvasOrigin = map.getPixelFromCoordinate([extent[0], extent[3]]);
-//             var mapExtent = map.getView().calculateExtent(map.getSize())
-//             var mapOrigin = map.getPixelFromCoordinate([mapExtent[0], mapExtent[3]]);
-//             var delta = [mapOrigin[0] - canvasOrigin[0], mapOrigin[1] - canvasOrigin[1]]
-            
-//             var a1 = map.getPixelFromCoordinate([0, 0]);
-//             var a2 = map.getPixelFromCoordinate([newSize[0], newSize[1]]);
+//     // let source = new ImageCanvasSource({
+//     //     canvasFunction: () => {
+//     //         const dicomData = map.get(DICOM_OBJECT) as DicomObject;
+//     //         dicomData.drawing();
+//     //         return dicomData.memoryCanvas;
+//     //     }
+//     // })
 
-//             dicomData.retouchX = a1[0] + delta[0];
-//             dicomData.retouchY = a1[1] + delta[1];
-//             dicomData.retouchWidth = Math.abs(a2[0]-a1[0]);
-//             dicomData.retouchHeight = Math.abs(a1[1]-a2[1]);
-//             dicomData.retouch();
-
-//             source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
-
-//             return dicomData.redrawingCanvas;
-//         }
+//     let source = new Static({
+//         url: dicomData.memoryCanvas.toDataURL(), // path,
+//         // imageLoadFunction: (wrapper, url) => {
+//         //     let image = wrapper.getImage() as HTMLImageElement;
+//         //     const dicomData = map.get(DICOM_OBJECT) as DicomObject;
+//         //     setImage(image);
+//         //     source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
+//         // },
+//         imageExtent: [0, -newSize[1], newSize[0], 0]
 //     });
+
+//     source.on("change", (e) => {
+//         let image = e.target.image_.getImage() as HTMLImageElement;
+//         setImage(image);
+//     });
+
+//     map.addInteraction(new DicomRightMouseDrag(source));
 
 //     let layer = new ImageLayer({
 //         source: source
 //     });
-    
+
 //     let view = new View({
-//         center: [newSize[0] / 2, -newSize[1] / 2],
+//         center: getCenter(source.getImageExtent()),
+//         //extent: source.getImageExtent(),
 //         constrainOnlyCenter: true,
 //         zoom: 6
 //     });
     
 //     return {layer, view}
 // }
+
+function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstance) {
+    let dicomData = new DicomObject(data);
+
+    map.set(DICOM_OBJECT, dicomData);
+    let newSize = fitSize(data.width, data.height);
+    let source = new ImageCanvasSource({
+        canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
+            const dicomData = map.get(DICOM_OBJECT) as DicomObject;
+            
+            dicomData.drawing();
+            if (dicomData.redrawingCanvas == undefined) {
+                dicomData.redrawingCanvas = document.createElement("canvas");
+                dicomData.redrawingCanvas.width = size[0];
+                dicomData.redrawingCanvas.height = size[1];
+                dicomData.redrawingContext = dicomData.redrawingCanvas.getContext('2d');
+                
+                dicomData.extent = extent;
+            }
+
+            if (dicomData.extent[0] != extent[0]) {
+                dicomData.redrawingContext.clearRect(0, 0, size[0], size[1]);
+                dicomData.extent = extent;
+            }
+
+            var canvasOrigin = map.getPixelFromCoordinate([extent[0], extent[3]]);
+            var mapExtent = map.getView().calculateExtent(map.getSize())
+            var mapOrigin = map.getPixelFromCoordinate([mapExtent[0], mapExtent[3]]);
+            var delta = [mapOrigin[0] - canvasOrigin[0], mapOrigin[1] - canvasOrigin[1]]
+            
+            var a1 = map.getPixelFromCoordinate([0, 0]);
+            var a2 = map.getPixelFromCoordinate([newSize[0], newSize[1]]);
+
+            dicomData.retouchX = a1[0] + delta[0];
+            dicomData.retouchY = a1[1] + delta[1];
+            dicomData.retouchWidth = Math.abs(a2[0]-a1[0]);
+            dicomData.retouchHeight = Math.abs(a1[1]-a2[1]);
+            dicomData.retouch();
+
+            source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
+
+            return dicomData.redrawingCanvas;
+        }
+    });
+
+    let layer = new ImageLayer({
+        source: source
+    });
+    
+    let view = new View({
+        center: [newSize[0] / 2, -newSize[1] / 2],
+        constrainOnlyCenter: true,
+        zoom: 6
+    });
+    
+    map.addInteraction(new DicomRightMouseDrag(source));
+    return {layer, view}
+}
 
 export function makeLayer(map: Map, path:string, data:any, axiosInstance?: AxiosInstance): SourceData {
     if (path.indexOf(".dzi") > -1) {

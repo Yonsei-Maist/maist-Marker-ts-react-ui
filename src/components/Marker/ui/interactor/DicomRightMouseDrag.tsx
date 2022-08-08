@@ -1,6 +1,7 @@
 import { MapBrowserEvent } from "ol";
 import { Coordinate } from "ol/coordinate";
 import PointerInteraction from "ol/interaction/Pointer";
+import ImageSource from "ol/source/Image";
 import Static from "ol/source/ImageStatic";
 import { DicomObject } from "../../../../lib/dicomReader";
 
@@ -11,9 +12,9 @@ class DicomRightMouseDrag extends PointerInteraction {
     public windowWidth: number;
     private clicked: boolean;
     private coordinate: undefined | Coordinate;
-    private source: Static;
+    private source: ImageSource;
 
-    constructor(source: Static) {
+    constructor(source: ImageSource) {
         super();
 
         this.source = source;
@@ -56,13 +57,13 @@ class DicomRightMouseDrag extends PointerInteraction {
         if (this.clicked && this.coordinate) {
             const map = evt.map;
             const dicomObject = map.get(DICOM_OBJECT) as DicomObject;
-            dicomObject.ww = this.windowWidth + (evt.coordinate[0] - this.coordinate[0]) / 1000;
-            dicomObject.wc = this.windowCenter + (evt.coordinate[1] - this.coordinate[1]) / 1000;
+            dicomObject.ww = this.windowWidth + (evt.coordinate[0] - this.coordinate[0])  / 1000// dicomObject.width;
+            dicomObject.wc = this.windowCenter + (evt.coordinate[1] - this.coordinate[1]) / 1000// dicomObject.height;
             if (dicomObject.ww < 0)
                 dicomObject.ww = 0;
             
             this.source.setAttributions(['ww: ' + dicomObject.ww.toFixed(5), ' wc: ' + dicomObject.wc.toFixed(5)]);
-            //this.source.changed();
+            this.source.changed();
         }
 
         return true;

@@ -4,20 +4,38 @@ Typescript react module
 ## About the Project
 
 ### Summary
-- Read dzi formatted file
-- Draw Box, Polygon to images
+- Read dzi formatted file (to show microscope data)
+- Read image(.jpeg, .png, etc)
+- Read dicom(.dcm) (to show CT, MRI, and X-ray data)
+- Draw Box, Polygon, Ellipse to images
+- Measure length and area
 
 ### Functions
 - Drawing
 - Labeling
 - Zoom Out, In
+- wc, ww controll in dcm
 
 ## Environment
 ```
 node v17.0.1
 npx v8.1.0
 typescript v4.4.4
+ol v6.15.1
+cornerstone v2.3.0
+cornerstone-wado-image-loader v3.3.0
+dicom-parser v1.8.13
+@mui/material v^5.0.0
+@emotion/styled v^11.0.0
+@babel/core v17.18.0
+webpack v4.46.0
 ```
+
+## Open source library
+[React](https://reactjs.org/)  
+[Typescript](https://www.typescriptlang.org/)  
+[Openlayers](https://openlayers.org/)  
+[Cornerstone](https://www.cornerstonejs.org/)  
 
 ## Install
 ```
@@ -55,8 +73,9 @@ ToolOption: {
 
 ## Run
 ```
-npm run start // start using webpack: localhost:3000
+npm run storybook // start using storybook: localhost:6006
 npm run build // build to publish
+npm run deploy // deploy to repo
 ```
 
 ## Author
@@ -64,7 +83,12 @@ npm run build // build to publish
 Chanwoo Gwon, Yonsei Univ. Researcher, since 2020.05 ~
 ```
 
-## maintainer
+## Maintainer
 ```
 Chanwoo Gwon, arknell@yonsei.ac.kr (2021.10. ~)
+```
+
+## License
+```
+ISC.
 ```

@@ -1,3 +1,6 @@
 {
-    "type": "commonjs"
+    "type": "commonjs",
+    "override": {
+        "webpack": "4.46.0"
+    }
 }
