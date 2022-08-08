@@ -128,7 +128,25 @@ export function fitSize(width: number, height: number) {
     return [newWidth, newHeight];
 }
 
-async function dicomReader(url: string) {
+export interface HeaderString {
+    key: string;
+    value: string;
+}
+
+async function dicomReader(url: string, header?: HeaderString[], withCredentials?: boolean) {
+    if (header || withCredentials == true) {
+        cornerstoneWADOImageLoader.configure({
+            beforeSend: function (xhr: XMLHttpRequest) {
+                xhr.withCredentials = withCredentials;
+
+                if (header) {
+                    for (let i = 0; i < header.length; i++) {
+                        xhr.setRequestHeader(header[i].key, header[i].value);
+                    }
+                }
+            },
+        });
+    }
     return await cornerstone.loadAndCacheImage('wadouri:' + url);
 }
 

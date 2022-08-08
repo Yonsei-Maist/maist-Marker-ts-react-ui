@@ -17,6 +17,7 @@ import Confirm from './Confirm';
 import { AxiosInstance } from 'axios';
 
 import 'ol/ol.css';
+import { HeaderString } from '../../../lib/dicomReader';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -57,14 +58,15 @@ export interface MarkerProps extends ToolNavigatorProps {
     labelNameList?: LabelNameInfo[];
     saveHandler?: (labelList: LabelInfo[]) => void;
     axiosInstance?: AxiosInstance;
+    header?: HeaderString[];
+    withCredentials?: boolean;
 };
 
-function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelInfo, labelNameList, saveHandler, axiosInstance }: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelInfo, labelNameList, saveHandler, axiosInstance, header, withCredentials }: MarkerProps, ref: Ref<MarkerState>) {
     const providerState = useRef(null as MapProviderState | null);
     const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
     const boxRef = useRef();
-    const attributionRef = useRef();
     const [localLabelInfo, setLocalLabelInfo] = useState(labelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
 
@@ -76,7 +78,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         if (providerState.current) {
             for (let i = 0; i < providerState.current.labelList.length; i++) {
                 let item = providerState.current.labelList[i];
-
+                
                 labelList.push({
                     data: baseDrawer.createSaveData(item, toObject),
                     toolType: item.feature.get(TOOL_TYPE),
@@ -182,7 +184,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList} attributionContainer={attributionRef.current}>
+        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList} header={header} withCredentials={withCredentials}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
@@ -198,8 +200,6 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
                 <LabelNavigator open={open} onOpenChange={() => {
                     setOpen(false);
                 }} />
-                <Card ref={attributionRef}>
-                </Card>
             </Box>
             <Confirm open={openConfirm} title={"로컬 데이터 확인"} content={"로컬에 저장된 데이터가 발견되었습니다. 불러오시겠습니까?"} onHandleOpen={onHandleOpen} onHandleConfirm={onHandleLocalLoad} />
         </MapProvider>

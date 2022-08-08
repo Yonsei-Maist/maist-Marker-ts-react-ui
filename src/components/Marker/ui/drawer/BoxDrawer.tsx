@@ -13,7 +13,7 @@ export function calculateCenter(geometry: Polygon, point: number[]): any {
     let coordinates = geometry.getCoordinates()[0];
     let newCoord = [] as any;
     let closest = [] as any;
-    let min = 10000;
+    let min = 100000000;
     coordinates.forEach(function (coordinate) {
         let distance = Math.sqrt(Math.pow((point[0] - coordinate[0]), 2) + Math.pow((point[1] - coordinate[1]), 2));
         if (distance == Math.min(distance, min)) {
@@ -42,12 +42,17 @@ export function calculateCenter(geometry: Polygon, point: number[]): any {
 
 class BoxMark extends BaseMark {
     location: Coordinate[][];
+
+    refresh() {
+        let feature = this.feature;
+        this.location = (feature.getGeometry() as Polygon).getCoordinates();
+    }
 }
 
 class BoxDrawer extends BasicDrawer<BoxMark> {
 
     createMark(saveData: string, memo?: string): BoxMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(BoxMark, saveData);
 
         let geo = new Polygon(parsed.location);
         parsed.feature = new Feature(geo);
@@ -61,8 +66,9 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         let mark = new BoxMark();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+
+        mark.refresh();
 
         return mark;
     }

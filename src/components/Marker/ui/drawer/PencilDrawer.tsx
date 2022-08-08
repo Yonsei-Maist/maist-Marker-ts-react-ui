@@ -10,12 +10,19 @@ import BasicDrawer from "./BaseDrawer";
 
 class PencilMark extends BaseMark {
     location: Coordinate[][];
+
+    refresh() {
+        let feature = this.feature;
+        if (feature) {
+            this.location = (feature.getGeometry() as Polygon).getCoordinates();
+        }
+    }
 }
 
 class PencilDrawer extends BasicDrawer<PencilMark> {
 
     createMark(saveData: string, memo?: string): PencilMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(PencilMark, saveData);
         let geo = new Polygon(parsed.location);
         parsed.feature = new Feature(geo);
         parsed.toolType = Tools.Pencil;
@@ -29,8 +36,9 @@ class PencilDrawer extends BasicDrawer<PencilMark> {
         let mark = new PencilMark();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+
+        mark.refresh();
 
         return mark;
     }

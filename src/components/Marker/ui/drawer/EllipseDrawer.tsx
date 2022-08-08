@@ -39,11 +39,21 @@ const calculateEllipse = (first: Coordinate, last: Coordinate): Polygon => {
 class EllipseMark extends BaseMark {
     first: Coordinate;
     last: Coordinate;
+
+    refresh() {
+        let feature = this.feature;
+        if (this.feature) {
+            let geo = feature.getGeometry() as GeometryCollection;
+            let geos = geo.getGeometries();
+            this.first = (geos[0] as Point).getCoordinates();
+            this.last = (geos[1] as Point).getCoordinates();
+        }
+    }
 }
 
 class EllipseDrawer extends BasicDrawer<EllipseMark> {
     createMark(saveData: string, memo?: string): EllipseMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(EllipseMark, saveData);
         var first = parsed.first;
         var last = parsed.last;
 
@@ -64,13 +74,10 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
 
     fromFeature(feature: Feature<Geometry>): EllipseMark {
         let mark = new EllipseMark();
-        let geo = feature.getGeometry() as GeometryCollection;
-        let geos = geo.getGeometries();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.first = (geos[0] as Point).getCoordinates();
-        mark.last = (geos[1] as Point).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+        mark.refresh();
 
         return mark;
     }

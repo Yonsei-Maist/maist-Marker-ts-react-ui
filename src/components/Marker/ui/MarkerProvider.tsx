@@ -15,6 +15,7 @@ import BaseMark from './mark/BaseMark';
 import { AxiosInstance } from 'axios';
 import { Alert, CircularProgress } from '@mui/material';
 import { Tools } from './ToolNavigator';
+import { HeaderString } from '../../../lib/dicomReader';
 
 export interface MapProviderState {
     labelList: BaseMark[]
@@ -30,13 +31,14 @@ type MapProviderProps = {
     children?: React.ReactNode;
     axiosInstance?: AxiosInstance;
     labelNameList: LabelNameInfo[];
-    attributionContainer?: HTMLElement;
+    header?: HeaderString[];
+    withCredentials?: boolean;
 };
 
-function MapProvider({ dziUrl, children, axiosInstance, labelNameList, attributionContainer }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
     const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
-    const [state, refetch] = dziReader(dziUrl, [], axiosInstance);
+    const [state, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
     const { loading, data, error } = state;
 
     useImperativeHandle(ref, () => {

@@ -10,12 +10,19 @@ import BaseDrawer from "./BaseDrawer";
 
 class PolygonMark extends BaseMark {
     location: Coordinate[][];
+
+    refresh() {
+        let feature = this.feature;
+        if (feature) {
+            this.location = (feature.getGeometry() as Polygon).getCoordinates();
+        }
+    }
 }
 
 class PolygonDrawer extends BaseDrawer<PolygonMark> {
 
     createMark(saveData: string, memo?: string): PolygonMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(PolygonMark, saveData);
         let geo = new Polygon(parsed.location);
         parsed.feature = new Feature(geo);
         parsed.toolType = Tools.Polygon;
@@ -29,8 +36,9 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
         let mark = new PolygonMark();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+
+        mark.refresh();
 
         return mark;
     }

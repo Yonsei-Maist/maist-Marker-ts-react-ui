@@ -8,7 +8,7 @@ import { ImageArcGISRest, ImageWMS, Zoomify } from "ol/source";
 import Static from "ol/source/ImageStatic";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
-import dicomReader, { DicomObject, fitSize } from "../lib/dicomReader";
+import dicomReader, { DicomObject, fitSize, HeaderString } from "../lib/dicomReader";
 import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/interactor/DicomRightMouseDrag";
 
 import sizeOf from 'buffer-image-size';
@@ -230,7 +230,7 @@ export function makeLayer(map: Map, path:string, data:any, axiosInstance?: Axios
     }
 }
 
-function ReadFile(url:string, dev: React.DependencyList, axiosInstance?: AxiosInstance): [ReducerState, ()=>Promise<void>] {
+function ReadFile(url:string, dev: React.DependencyList, axiosInstance?: AxiosInstance, header?: HeaderString[], withCredentials=true): [ReducerState, ()=>Promise<void>] {
     async function getFile() {
         const response = await (axiosInstance || axios.create()).get(
             url, {responseType: "arraybuffer"}
@@ -243,7 +243,7 @@ function ReadFile(url:string, dev: React.DependencyList, axiosInstance?: AxiosIn
     }
     
     async function getDicom() {
-        const image = await dicomReader(url);
+        const image = await dicomReader(url, header, withCredentials);
 
         return {
             result: image ? "success":"fail",

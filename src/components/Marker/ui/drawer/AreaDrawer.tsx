@@ -12,6 +12,13 @@ import { measureStyleFunciton } from "./Styler";
 
 class AreaMark extends BaseMark {
     location: Coordinate[][];
+
+    refresh() {
+        let feature = this.feature;
+        if (feature) {
+            this.location = (feature.getGeometry() as Polygon).getCoordinates();
+        }
+    }
 }
 
 class AreaDrawer extends BasicDrawer<AreaMark> {
@@ -22,7 +29,7 @@ class AreaDrawer extends BasicDrawer<AreaMark> {
     }
 
     createMark(saveData: string, memo?: string): AreaMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(AreaMark, saveData);
         let geo = new Polygon(parsed.location);
         parsed.feature = new Feature(geo);
         parsed.feature.set(TOOL_MEMO, memo);
@@ -35,8 +42,10 @@ class AreaDrawer extends BasicDrawer<AreaMark> {
         let mark = new AreaMark();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.location = (feature.getGeometry() as Polygon).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+
+        mark.refresh();
+
         return mark;
     }
 

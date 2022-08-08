@@ -13,13 +13,21 @@ import { Coordinate } from "ol/coordinate";
 
 class LengthMark extends BaseMark {
     location: Coordinate[];
+
+    refresh() {
+        let feature = this.feature;
+
+        if (feature) {
+            this.location = (feature.getGeometry() as LineString).getCoordinates();
+        }
+    }
 }
 
 class LengthDrawer extends BasicDrawer<LengthMark> {
     formatLength: (line:any) =>string;
 
     createMark(saveData: string, memo?: string): LengthMark {
-        let parsed = this.loadSaveData(saveData);
+        let parsed = this.loadSaveData(LengthMark, saveData);
         let geo = new LineString(parsed.location);
         parsed.feature = new Feature(geo);
         parsed.toolType = Tools.Length;
@@ -33,8 +41,9 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
         let mark = new LengthMark();
         mark.feature = feature;
         mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.location = (feature.getGeometry() as LineString).getCoordinates();
         mark.toolType = feature.get(TOOL_TYPE);
+
+        mark.refresh();
 
         return mark;
     }

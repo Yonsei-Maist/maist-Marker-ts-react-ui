@@ -22,8 +22,8 @@ class BasicDrawer<T extends BaseMark> {
 
     }
 
-    loadSaveData(saveData: string) {
-        return JSON.parse(saveData) as T;
+    loadSaveData(type: new() => T, saveData: string) {
+        return BaseMark.fillFromJSON<T>(type, saveData);
     }
 
     createMark(saveData: string, memo?: string) {
@@ -35,7 +35,9 @@ class BasicDrawer<T extends BaseMark> {
     }
 
     createSaveData(mark: BaseMark, toObject: boolean) {
+        mark.refresh();
         let saving = {...mark};
+        
         delete saving.feature;
         delete saving.id;
         delete saving.label;
