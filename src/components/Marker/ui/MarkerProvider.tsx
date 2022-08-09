@@ -5,7 +5,7 @@ import dziReader, { makeLayer } from "../../../api/SourceReader";
 import { defaults } from 'ol/control';
 import { Vector } from 'ol/source';
 
-import MapContext, { MapObject } from '../context/MapContext';
+import MapContext, { MapObject, MAP_MEMO } from '../context/MapContext';
 import {LabelContext, LabelContextObject } from '../context';
 import { Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
@@ -18,7 +18,8 @@ import { Tools } from './ToolNavigator';
 import { HeaderString } from '../../../lib/dicomReader';
 
 export interface MapProviderState {
-    labelList: BaseMark[]
+    labelList: BaseMark[],
+    memo?: string
 }
 
 export interface LabelNameInfo {
@@ -33,9 +34,10 @@ type MapProviderProps = {
     labelNameList: LabelNameInfo[];
     header?: HeaderString[];
     withCredentials?: boolean;
+    memo?: string;
 };
 
-function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials, memo }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
     const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
     const [state, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
@@ -43,7 +45,8 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
 
     useImperativeHandle(ref, () => {
         return {
-            labelList: labelContext.labelList
+            labelList: labelContext.labelList,
+            memo: mapObj.map.get(MAP_MEMO)
         } as MapProviderState;
     });
 
@@ -168,7 +171,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             controls: defaults({ zoom: false, rotate: false}).extend([]),
             target: 'map'
         });
-
+        map.set(MAP_MEMO, memo);
         setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
         setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
         return () => map.setTarget(undefined);
@@ -201,6 +204,13 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             setMapObj({...mapObj, isLoaded: true, select, remove, unselect, clearSelection});
         }
     }, [data]);
+
+    useEffect(() => {
+        const {map} = mapObj;
+        if (map) {
+            map.set(MAP_MEMO, memo);
+        }
+    }, [memo]);
 
     return (
         <MapContext.Provider value={mapObj}>

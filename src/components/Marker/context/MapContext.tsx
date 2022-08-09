@@ -2,6 +2,8 @@ import React from 'react';
 import { Map } from 'ol';
 import BaseMark from '../ui/mark/BaseMark';
 
+export const MAP_MEMO = "MAP_MEMO";
+
 export interface MapObject {
     map?: Map;
     isLoaded: boolean;

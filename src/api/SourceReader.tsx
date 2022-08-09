@@ -13,6 +13,7 @@ import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/inter
 
 import sizeOf from 'buffer-image-size';
 import ImageCanvasSource from "ol/source/ImageCanvas";
+import { MAP_MEMO } from "../components/marker/context/MapContext";
 
 interface SourceData {
     layer: Layer;
@@ -166,6 +167,16 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
     let dicomData = new DicomObject(data);
 
     map.set(DICOM_OBJECT, dicomData);
+    let memo = map.get(MAP_MEMO);
+    if (memo) {
+        let windowInfo = JSON.parse(memo);
+
+        if (windowInfo) {
+            dicomData.ww = windowInfo.ww || dicomData.ww;
+            dicomData.wc = windowInfo.wc || dicomData.wc;
+        }
+    }
+    
     let newSize = fitSize(data.width, data.height);
     let source = new ImageCanvasSource({
         canvasFunction: (extent, resolutions, pixelRatio, size, projection) => {
@@ -201,6 +212,7 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
             dicomData.retouch();
 
             source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
+            map.set(MAP_MEMO, JSON.stringify({ww: dicomData.ww, wc: dicomData.wc}));
 
             return dicomData.redrawingCanvas;
         }

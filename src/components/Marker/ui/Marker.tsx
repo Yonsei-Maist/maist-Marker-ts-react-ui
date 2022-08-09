@@ -3,7 +3,7 @@
  * @author Chanwoo Gwon, Yonsei Univ. Researcher, since 2020.05. ~
  * @Date 2021.10.27
  */
-import React, { Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { memo, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
@@ -51,26 +51,41 @@ export interface MarkerState {
     getLabelList: () => LabelInfo[];
 }
 
-export interface MarkerProps extends ToolNavigatorProps {
+export interface MarkerProps {
     dziUrl: string;
-    readOnly?: boolean;
-    toolTypes?: Tools[];
-    labelNameList?: LabelNameInfo[];
-    saveHandler?: (labelList: LabelInfo[]) => void;
+    saveHandler?: (labelList: LabelInfo[], memo?: string) => void;
     axiosInstance?: AxiosInstance;
-    header?: HeaderString[];
-    withCredentials?: boolean;
+    options?: MarkerOptions;
+    lengthFormat?: (length:number) => string;
+    areaFormat?: (area: number) => string;
 };
 
-function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelInfo, labelNameList, saveHandler, axiosInstance, header, withCredentials }: MarkerProps, ref: Ref<MarkerState>) {
+export interface MarkerOptions {
+    readOnly?: boolean;
+    toolTypes?: Tools[];
+    savedLabelInfo?: LabelInfo[];
+    savedMemo?: string;
+    labelNameList?: LabelNameInfo[];
+    dcmConnectHeader?: HeaderString[];
+    dcmWithCredentials?: boolean;
+}
+
+const defaultOptions: MarkerOptions = {
+    readOnly: false,
+    dcmWithCredentials: true,
+    labelNameList: []
+}
+
+function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, options}: MarkerProps, ref: Ref<MarkerState>) {
     const providerState = useRef(null as MapProviderState | null);
     const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
     const boxRef = useRef();
-    const [localLabelInfo, setLocalLabelInfo] = useState(labelInfo);
+    const [localLabelInfo, setLocalLabelInfo] = useState(options.savedLabelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
 
     const storage_key = LOCAL_STORAGE_KEY + dziUrl;
+    const storage_memo_key = LOCAL_STORAGE_KEY + dziUrl + "memo";
 
     const getLabel = (toObject: boolean) => {
         let labelList = [];
@@ -91,19 +106,31 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         return labelList;
     }
 
+    const getMemo = () => {
+        let memo = "";
+        if (providerState.current) {
+            memo = providerState.current.memo
+        }
+
+        return memo;
+    }
+
     const onSave = () => {
         let labels = getLabel(true);
+        let memo = getMemo();
 
         if (saveHandler) {
-            saveHandler(labels);
+            saveHandler(labels, memo);
             localStorage.removeItem(storage_key);
         }
     };
 
     const onLocalSave = () => {
         let labels = getLabel(false);
+        let memo = getMemo();
         // save to local
         localStorage.setItem(storage_key, JSON.stringify(labels));
+        localStorage.setItem(storage_memo_key, memo);
     }
 
     const getLoadData = () => {
@@ -111,6 +138,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         if (data && data.length > 2) {
             setOpenConfirm(true);
         }
+
     }
 
     const onLocalLoad = () => {
@@ -118,6 +146,10 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
         let data = localStorage.getItem(storage_key);
         if (data && data.length > 2) {
             setLocalLabelInfo(JSON.parse(data));
+
+            let memo = localStorage.getItem(storage_memo_key);
+            
+            options.savedMemo = memo;
         }
     }
 
@@ -142,10 +174,10 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     }, []);
 
     useEffect(() => {
-        if (toolTypes) {
+        if (options.toolTypes) {
             let typeOption = {} as ToolOption;
-            for (let i = 0; i < toolTypes.length; i++) {
-                let type = toolTypes[i];
+            for (let i = 0; i < options.toolTypes.length; i++) {
+                let type = options.toolTypes[i];
                 switch (type) {
                     case Tools.Area:
                         typeOption.area = true;
@@ -170,11 +202,9 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
 
             setOption(typeOption);
         }
-    }, [toolTypes]);
 
-    useEffect(() => {
-        setLocalLabelInfo(labelInfo);
-    }, [labelInfo]);
+        setLocalLabelInfo(options.savedLabelInfo);
+    }, [options]);
 
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
@@ -184,7 +214,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={labelNameList} header={header} withCredentials={withCredentials}>
+        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={options.labelNameList} header={options.dcmConnectHeader} withCredentials={options.dcmWithCredentials}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
@@ -194,7 +224,7 @@ function Marker({ dziUrl, readOnly, toolTypes, lengthFormat, areaFormat, labelIn
 
                 </PaletteNavigator>
                 {
-                    !readOnly &&
+                    !options.readOnly &&
                     <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} labelInfo={localLabelInfo} />
                 }
                 <LabelNavigator open={open} onOpenChange={() => {
@@ -210,8 +240,7 @@ const RefMarker = React.forwardRef<MarkerState, MarkerProps>(Marker);
 
 RefMarker.defaultProps = {
     dziUrl: "",
-    readOnly: false,
-    labelNameList: []
+    options: defaultOptions
 };
 
 export {
