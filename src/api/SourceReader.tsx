@@ -205,10 +205,10 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
             var a1 = map.getPixelFromCoordinate([0, 0]);
             var a2 = map.getPixelFromCoordinate([newSize[0], newSize[1]]);
 
-            dicomData.retouchX = a1[0] + delta[0];
-            dicomData.retouchY = a1[1] + delta[1];
-            dicomData.retouchWidth = Math.abs(a2[0]-a1[0]);
-            dicomData.retouchHeight = Math.abs(a1[1]-a2[1]);
+            dicomData.retouchX = Math.abs((a1[0] + delta[0]) * pixelRatio);
+            dicomData.retouchY = Math.abs((a1[1] + delta[1]) * pixelRatio);
+            dicomData.retouchWidth = Math.abs((a2[0]-a1[0]) * pixelRatio);
+            dicomData.retouchHeight = Math.abs((a1[1]-a2[1]) * pixelRatio);
             dicomData.retouch();
 
             source.setAttributions(['ww: ' + dicomData.ww.toFixed(5), ' wc: ' + dicomData.wc.toFixed(5)]);
