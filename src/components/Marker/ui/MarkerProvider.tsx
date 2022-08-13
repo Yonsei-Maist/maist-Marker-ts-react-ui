@@ -46,7 +46,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
     useImperativeHandle(ref, () => {
         return {
             labelList: labelContext.labelList,
-            memo: mapObj.map.get(MAP_MEMO)
+            memo: mapObj.map ? mapObj.map.get(MAP_MEMO) : memo
         } as MapProviderState;
     });
 
