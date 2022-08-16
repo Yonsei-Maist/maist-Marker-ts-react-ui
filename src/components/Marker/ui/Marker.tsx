@@ -83,6 +83,8 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const boxRef = useRef();
     const [localLabelInfo, setLocalLabelInfo] = useState(options.savedLabelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
+    const [memo, setMemo] = useState(options.savedMemo);
+    const [localCheck, setLocalCheck] = useState(true);
 
     const storage_key = LOCAL_STORAGE_KEY + dziUrl;
     const storage_memo_key = LOCAL_STORAGE_KEY + dziUrl + "memo";
@@ -122,6 +124,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         if (saveHandler) {
             saveHandler(labels, memo);
             localStorage.removeItem(storage_key);
+            localStorage.removeItem(storage_memo_key);
         }
     };
 
@@ -135,8 +138,11 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
 
     const getLoadData = () => {
         let data = localStorage.getItem(storage_key);
-        if (data && data.length > 2) {
+        let memo = localStorage.getItem(storage_memo_key);
+        if ((data && data.length > 2) || memo) {
             setOpenConfirm(true);
+        } else {
+            setLocalCheck(false);
         }
 
     }
@@ -144,13 +150,16 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const onLocalLoad = () => {
         // get from local
         let data = localStorage.getItem(storage_key);
+        let memo = localStorage.getItem(storage_memo_key);
         if (data && data.length > 2) {
             setLocalLabelInfo(JSON.parse(data));
-
-            let memo = localStorage.getItem(storage_memo_key);
-            
-            options.savedMemo = memo;
         }
+        if (memo) {
+            console.log(memo);
+            setMemo(memo);
+        }
+
+        setLocalCheck(false);
     }
 
     const onHandleOpen = () => {
@@ -163,6 +172,9 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
             onLocalLoad();
         } else {
             localStorage.setItem(storage_key, JSON.stringify(localLabelInfo || []));
+            localStorage.setItem(storage_memo_key, memo);
+
+            setLocalCheck(false);
         }
     }
 
@@ -214,7 +226,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     } as MarkerState));
 
     return (
-        <MapProvider ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={options.labelNameList} header={options.dcmConnectHeader} withCredentials={options.dcmWithCredentials}>
+        <MapProvider load={localCheck} ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={options.labelNameList} header={options.dcmConnectHeader} withCredentials={options.dcmWithCredentials} memo={memo}>
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>

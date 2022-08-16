@@ -35,13 +35,13 @@ type MapProviderProps = {
     header?: HeaderString[];
     withCredentials?: boolean;
     memo?: string;
+    load: boolean;
 };
 
-function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials, memo }: MapProviderProps, ref:Ref<MapProviderState>) {
+function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
     const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
-    const [state, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
-    const { loading, data, error } = state;
+    const [{ loading, data, error }, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
 
     useImperativeHandle(ref, () => {
         return {
@@ -167,15 +167,20 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
     }
 
     useEffect(() => {
-        const map = new Map({
-            controls: defaults({ zoom: false, rotate: false}).extend([]),
-            target: 'map'
-        });
-        map.set(MAP_MEMO, memo);
-        setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
-        return () => map.setTarget(undefined);
-    }, []);
+        if (!load) {
+            const map = new Map({
+                controls: defaults({ zoom: false, rotate: false}).extend([]),
+                target: 'map'
+            });
+            console.log(memo);
+            map.set(MAP_MEMO, memo);
+            setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
+            setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+            
+            refetch();
+            return () => map.setTarget(undefined);
+        }
+    }, [load]);
 
     useEffect(() => {
         if (data) {
@@ -217,6 +222,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             <LabelContext.Provider value={labelContext}>
                 {
                     !loading &&
+                    !load &&
                     error &&
                     <Alert severity='error'>{"Error !"}</Alert>
                 }
@@ -224,7 +230,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                     children
                 }
                 {
-                    loading &&
+                    (loading || load) &&
                     <CircularProgress size={20} sx={{position: "absolute", top: "50%", left: "50%", transform:"translate(-50%, -50%)"}}/>
                 }
             </LabelContext.Provider>

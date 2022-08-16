@@ -168,6 +168,7 @@ function parseDicom(map: Map, path:string, data:any, axiosInstance?: AxiosInstan
 
     map.set(DICOM_OBJECT, dicomData);
     let memo = map.get(MAP_MEMO);
+    
     if (memo) {
         let windowInfo = JSON.parse(memo);
 
@@ -264,9 +265,9 @@ function ReadFile(url:string, dev: React.DependencyList, axiosInstance?: AxiosIn
     }
 
     if (url.indexOf(".dcm") > -1) {
-        return useAsync(getDicom, dev);
+        return useAsync(getDicom, dev, true);
     } else {
-        return useAsync(getFile, dev);
+        return useAsync(getFile, dev, true);
     }
 }
 
