@@ -1,4 +1,5 @@
 import dicomParser from "dicom-parser";
+import CanvasDrawer from "./CanvasDrawer";
 
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import cornerstone from "cornerstone-core";
@@ -6,7 +7,7 @@ import cornerstone from "cornerstone-core";
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 
-export class DicomObject {
+export class DicomObject extends CanvasDrawer{
     private slope: number;
     private intercept: number;
     private data: any;
@@ -14,49 +15,24 @@ export class DicomObject {
     private photometricInterpretation: string;
     private pixelData: any;
 
-    private context: CanvasRenderingContext2D;
-    private imageData: ImageData;
-
     public readonly originWindowWidth: number;
     public readonly originWindowCenter: number;
 
     public ww: number;
     public wc: number;
-    public readonly width: number;
-    public readonly height: number;
-    public readonly memoryCanvas: HTMLCanvasElement;
-
-    public redrawingCanvas: HTMLCanvasElement;
-    public redrawingContext: CanvasRenderingContext2D;
-
-    public retouchX: number;
-    public retouchY: number;
-    public retouchWidth: number;
-    public retouchHeight: number;
 
     public extent: number[];
 
     constructor(data: any) {
+        super(data.width, data.height);
         this.data = data;
         this.dataSet = data.data;
         this.ww = data.windowWidth;
         this.wc = data.windowCenter;
-        this.height = data.height;
-        this.width = data.width;
         this.photometricInterpretation = this.dataSet.string('x00280004');
         this.pixelData = data.getPixelData();
         this.slope = data.slope;
         this.intercept = data.intercept;
-
-        this.memoryCanvas = document.createElement("canvas");
-        this.createContext();
-    }
-    
-    createContext() {
-        this.memoryCanvas.width = this.width;
-        this.memoryCanvas.height = this.height;
-        this.context = this.memoryCanvas.getContext("2d", {alpha: false});
-        this.imageData = this.context.createImageData(this.memoryCanvas.width, this.memoryCanvas.height);
     }
 
     drawing() {
@@ -110,13 +86,6 @@ export class DicomObject {
         this.imageData.data.set(pixels);
         this.context.putImageData(this.imageData, 0, 0);
     }
-
-    retouch() {
-        this.redrawingContext.drawImage(this.memoryCanvas,
-            this.retouchX, this.retouchY, 
-            this.retouchWidth, this.retouchHeight
-        );
-    }
 }
 
 export function fitSize(width: number, height: number) {
@@ -131,6 +100,10 @@ export function fitSize(width: number, height: number) {
 export interface HeaderString {
     key: string;
     value: string;
+}
+
+export function isDicom(url: string) {
+    return url.indexOf(".dcm") > -1;
 }
 
 async function dicomReader(url: string, header?: HeaderString[], withCredentials?: boolean) {

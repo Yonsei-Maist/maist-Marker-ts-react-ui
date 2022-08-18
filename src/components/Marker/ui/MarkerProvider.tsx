@@ -1,4 +1,5 @@
-import { Feature, Graticule, Map } from 'ol';
+import { Feature, Graticule, Map as olMap } from 'ol';
+import {defaults as defaultInteraction} from 'ol/interaction';
 import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
 import dziReader, { makeLayer } from "../../../api/SourceReader";
 
@@ -14,11 +15,12 @@ import { Stroke } from 'ol/style';
 import BaseMark from './mark/BaseMark';
 import { AxiosInstance } from 'axios';
 import { Alert, CircularProgress } from '@mui/material';
-import { Tools } from './ToolNavigator';
+import { IS_DRAWER_VECTOR, Tools } from './ToolNavigator';
 import { HeaderString } from '../../../lib/dicomReader';
+import { LabelInfo } from './Marker';
 
 export interface MapProviderState {
-    labelList: BaseMark[],
+    pageLabelList: BaseMark[][],
     memo?: string
 }
 
@@ -40,15 +42,54 @@ type MapProviderProps = {
 
 function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref:Ref<MapProviderState>) {
     const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
-    const [labelContext, setLabelContext] = useState({labelList: [] as BaseMark[], globalLabelNameList: [] as string[]} as LabelContextObject);
+    const [labelContext, setLabelContext] = useState({pageLabelList: new Map<number, BaseMark[]>(), currentPageNo: 1, globalLabelNameList: [] as string[]} as LabelContextObject);
     const [{ loading, data, error }, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
 
     useImperativeHandle(ref, () => {
+        let pageLabelList = [];
+        for (let i=0;i<labelContext.pageLabelList.size;i++) {
+            let labelList = labelContext.pageLabelList.get(i + 1);
+
+            pageLabelList.push(labelList);
+        }
+
         return {
-            labelList: labelContext.labelList,
+            pageLabelList: pageLabelList,
             memo: mapObj.map ? mapObj.map.get(MAP_MEMO) : memo
         } as MapProviderState;
     });
+
+    function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
+        
+        let pageLabelList = labelContext.pageLabelList
+        if (pageLabelList.size != pages && !pageLabelInfo) {
+            pageLabelList.clear();
+
+            for (let i =0;i< pages;i++)
+                pageLabelList.set(i + 1, [] as BaseMark[]);
+        }
+
+        if (pageLabelInfo && converter) {
+            pageLabelList.clear();
+
+            for (let i =0 ;i<pageLabelInfo.length;i++) {
+                let labelInfo = pageLabelInfo[i];
+                let markList = [] as BaseMark[];
+                for (let j =0;j<labelInfo.length;j++) {
+                    markList.push(converter(labelInfo[j]));
+                }
+
+                pageLabelList.set(i + 1, markList);
+            }
+        }
+
+        setLabelContext(() => ({...labelContext, pageLabelList: new Map(pageLabelList), setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+    }
+
+    function setCurrentPageNo(page: number) {
+        labelContext.currentPageNo = page;
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+    }
 
     function getLabelNameList(toolType: Tools) {
         let labelNameStrList = labelNameList.find((o) => o.toolType == toolType);
@@ -58,39 +99,35 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
     function toolTypeChanged(toolType: Tools) {
         let globalLabelNameList = getLabelNameList(toolType);
 
-        labelContext.globalLabelNameList.splice(0, labelContext.globalLabelNameList.length);
-        for (let i = 0;i<globalLabelNameList.length;i++) {
-            labelContext.globalLabelNameList.push(globalLabelNameList[i]);
-        }
-
-        setLabelContext(() => ({...labelContext, globalLabelNameList, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+        setLabelContext(() => ({...labelContext, globalLabelNameList, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
     }
 
     function refresh() {
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
     }
 
     function setSelectedFeatures(features?: Feature[]) {
-        setLabelContext(() => ({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+        setLabelContext(() => ({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
     }
 
     function addLabel(mark: BaseMark) {
-        labelContext.labelList.push(mark);
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+        labelContext.pageLabelList.get(labelContext.currentPageNo).push(mark);
+        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
     }
 
     function removeLabel(feature: Feature) {
         let removeIdx = -1;
-        for (let i = 0;i<labelContext.labelList.length;i++) {
-            let originListId = labelContext.labelList[i].feature.getId();
+        let labelList = labelContext.pageLabelList.get(labelContext.currentPageNo);
+        for (let i = 0;i<labelList.length;i++) {
+            let originListId = labelList[i].feature.getId();
             let candidateRemovingId = feature.getId();
             if (originListId == candidateRemovingId)
                 removeIdx = i;
         }
 
         if (removeIdx > -1) {
-            labelContext.labelList.splice(removeIdx, 1);
-            setLabelContext(() => ({...labelContext, selectedFeatures: undefined, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+            labelList.splice(removeIdx, 1);
+            setLabelContext(() => ({...labelContext, selectedFeatures: undefined, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
         }
     }
 
@@ -168,14 +205,16 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
 
     useEffect(() => {
         if (!load) {
-            const map = new Map({
+            var interactions = defaultInteraction({altShiftDragRotate:false, pinchRotate:false}); 
+            const map = new olMap({
+                interactions,
                 controls: defaults({ zoom: false, rotate: false}).extend([]),
                 target: 'map'
             });
-            console.log(memo);
+            
             map.set(MAP_MEMO, memo);
             setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
-            setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList}));
+            setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
             
             refetch();
             return () => map.setTarget(undefined);

@@ -22,7 +22,7 @@ type LabelNavigatorProps = {
 };
 
 function LabelNavigator({open, onOpenChange }: LabelNavigatorProps) {
-    const { labelList, selectedFeatures, globalLabelNameList, getLabelNameList, setSelectedFeatures, removeLabel, refresh } = useContext(LabelContext);
+    const { pageLabelList, currentPageNo, selectedFeatures, globalLabelNameList, getLabelNameList, setSelectedFeatures, removeLabel, refresh } = useContext(LabelContext);
     const { remove, select, unselect } = useContext(MapContext);
     
     const [selectedLabel, setSelectedLabel] = useState(globalLabelNameList && globalLabelNameList.length > 0 ? globalLabelNameList[0] : '');
@@ -50,7 +50,8 @@ function LabelNavigator({open, onOpenChange }: LabelNavigatorProps) {
             </MarkerLabelInfo>
             <List>
                 {
-                    labelList.map((o, i) => {
+                    pageLabelList.size > 0 &&
+                    pageLabelList.get(currentPageNo).map((o, i) => {
                         let isSelected = false;
                         
                         if (!o.label)

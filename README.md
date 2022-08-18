@@ -59,6 +59,14 @@ module.exports = withPlugins([withTM, removeImports], {
     ...config
 }
 
+// next js - add webpack config (because the cornerstone-wado-image-loader@3.3.0 need to set fs)
+webpack(config) {
+    config.resolve.fallback = { fs: false };
+}
+
+// please npm install -D worker-loader@^3.0.0 (because the pdfjs-dist/webpack need to set worker-loader)
+npm install -D worker-loader
+
 /*
 ToolOption: {
     pencil?: boolean;

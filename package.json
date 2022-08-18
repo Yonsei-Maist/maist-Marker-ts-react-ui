@@ -1,6 +1,6 @@
 {
   "name": "@yonsei-maist/react-maist-marker",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -63,6 +63,8 @@
     "cornerstone-wado-image-loader": "^3.3.0",
     "dicom-parser": "^1.8.13",
     "ol": "^6.15.1",
+    "pdfjs-dist": "^2.3.200",
+    "react-pdf": "^5.7.2",
     "uuid": "^8.3.2",
     "webpack": "^4.46.0"
   },
@@ -83,6 +85,7 @@
     "@storybook/react": "^6.5.10",
     "@storybook/testing-library": "^0.0.13",
     "@types/node": "^18.6.4",
-    "typescript": "^4.6.4"
+    "typescript": "^4.6.4",
+    "worker-loader": "^3.0.8"
   }
 }

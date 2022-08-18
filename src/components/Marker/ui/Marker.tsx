@@ -8,8 +8,8 @@ import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
-import { Box, Card, IconButton, styled } from '@mui/material';
-import { ArrowCircleLeft } from '@mui/icons-material';
+import { Box, Button, Card, IconButton, styled, TextField } from '@mui/material';
+import { ArrowCircleLeft, ArrowLeft, ArrowRight } from '@mui/icons-material';
 import PaletteNavigator from './PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
 import BaseMark from './mark/BaseMark';
@@ -18,6 +18,8 @@ import { AxiosInstance } from 'axios';
 
 import 'ol/ol.css';
 import { HeaderString } from '../../../lib/dicomReader';
+import PDFPageControl from './controls/PDFPageControl';
+import { isPDF } from '../../../lib/PDFObject';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -63,7 +65,7 @@ export interface MarkerProps {
 export interface MarkerOptions {
     readOnly?: boolean;
     toolTypes?: Tools[];
-    savedLabelInfo?: LabelInfo[];
+    savedLabelInfo?: LabelInfo[][];
     savedMemo?: string;
     labelNameList?: LabelNameInfo[];
     dcmConnectHeader?: HeaderString[];
@@ -93,14 +95,21 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         let labelList = [];
         let baseDrawer = new BaseDrawer<BaseMark>();
         if (providerState.current) {
-            for (let i = 0; i < providerState.current.labelList.length; i++) {
-                let item = providerState.current.labelList[i];
+            for (let i = 0; i < providerState.current.pageLabelList.length; i++) {
+                let currentLabelList = providerState.current.pageLabelList[i];
+                let pageLabelList = [];
+                for (let j = 0;j<currentLabelList.length;j++) {
+
+                    let item = currentLabelList[j];
                 
-                labelList.push({
-                    data: baseDrawer.createSaveData(item, toObject),
-                    toolType: item.feature.get(TOOL_TYPE),
-                    label: item.label.labelName
-                } as LabelInfo);
+                    pageLabelList.push({
+                        data: baseDrawer.createSaveData(item, toObject),
+                        toolType: item.feature.get(TOOL_TYPE),
+                        label: item.label.labelName
+                    } as LabelInfo);
+                }
+                
+                labelList.push(pageLabelList);
             }
 
         }
@@ -120,7 +129,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const onSave = () => {
         let labels = getLabel(true);
         let memo = getMemo();
-
+        
         if (saveHandler) {
             saveHandler(labels, memo);
             localStorage.removeItem(storage_key);
@@ -133,13 +142,14 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         let memo = getMemo();
         // save to local
         localStorage.setItem(storage_key, JSON.stringify(labels));
-        localStorage.setItem(storage_memo_key, memo);
+        localStorage.setItem(storage_memo_key, memo ? memo: "");
     }
 
     const getLoadData = () => {
         let data = localStorage.getItem(storage_key);
         let memo = localStorage.getItem(storage_memo_key);
-        if ((data && data.length > 2) || memo) {
+        
+        if ((data && data.length > 2) || (memo && memo.length > 0)) {
             setOpenConfirm(true);
         } else {
             setLocalCheck(false);
@@ -155,7 +165,6 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
             setLocalLabelInfo(JSON.parse(data));
         }
         if (memo) {
-            console.log(memo);
             setMemo(memo);
         }
 
@@ -172,7 +181,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
             onLocalLoad();
         } else {
             localStorage.setItem(storage_key, JSON.stringify(localLabelInfo || []));
-            localStorage.setItem(storage_memo_key, memo);
+            localStorage.setItem(storage_memo_key, memo ? memo : "");
 
             setLocalCheck(false);
         }
@@ -227,6 +236,10 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
 
     return (
         <MapProvider load={localCheck} ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={options.labelNameList} header={options.dcmConnectHeader} withCredentials={options.dcmWithCredentials} memo={memo}>
+            {
+                isPDF(dziUrl) &&
+                <PDFPageControl/>
+            }
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
                 <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
@@ -237,7 +250,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
                 </PaletteNavigator>
                 {
                     !options.readOnly &&
-                    <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} labelInfo={localLabelInfo} />
+                    <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} pageLabelInfo={localLabelInfo} />
                 }
                 <LabelNavigator open={open} onOpenChange={() => {
                     setOpen(false);

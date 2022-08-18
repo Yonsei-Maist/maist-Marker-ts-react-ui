@@ -3,6 +3,7 @@ import React from "react";
 
 import { Marker } from ".."
 import { Tools } from "../components/marker/ui/ToolNavigator";
+import "ol/ol.css";
 
 export default {
     title: "Marker",
@@ -23,22 +24,27 @@ export const Image = () => <div style={{ height: "800px", width: "100%" }}>
 
 export const Dicom = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{dcmWithCredentials: false, labelNameList: []}}></Marker>
+    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [] }}></Marker>
 </div>;
 
 export const DicomSetWindow = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}"}}></Marker>
+    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}" }}></Marker>
+</div>;
+
+export const PDF = () => <div style={{ height: "800px", width: "100%" }}>
+    <div><a href="http://www.africau.edu/images/default/sample.pdf">PDF from africau</a></div>
+    <Marker dziUrl={"https://maist.yonsei.ac.kr/example/sample.pdf"}></Marker>
 </div>;
 
 export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker 
+    <Marker
         options={{
-            dcmWithCredentials: false, 
-            labelNameList:[
-                {toolType: Tools.Ellipse, labelNameList: ["CustomEllipse1", "CustomEllipse2"]},
-                {toolType: Tools.Box, labelNameList: ["CustomBox1", "CustomBox2"]}
+            dcmWithCredentials: false,
+            labelNameList: [
+                { toolType: Tools.Ellipse, labelNameList: ["CustomEllipse1", "CustomEllipse2"] },
+                { toolType: Tools.Box, labelNameList: ["CustomBox1", "CustomBox2"] }
             ],
             toolTypes: ["Ellipse" as Tools, "Box" as Tools]
         }} dziUrl={url}></Marker>
@@ -46,25 +52,43 @@ export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
 
 export const ToolPolygonOnly = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{toolTypes: ["Polygon" as Tools]}}></Marker>
+    <Marker dziUrl={url} options={{ toolTypes: ["Polygon" as Tools] }}></Marker>
 </div>;
 
 export const ToolLengthOnly = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{toolTypes: ["Length" as Tools]}}></Marker>
+    <Marker dziUrl={url} options={{ toolTypes: ["Length" as Tools] }}></Marker>
 </div>;
 
 export const Load = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
     <Marker dziUrl={url} options={{
-    savedLabelInfo:[
-        {
-            data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837]}",
-            label: "Broken",
-            toolType: "Ellipse" as Tools
-        }
-    ],
-    toolTypes: ["Polygon" as Tools],
-    labelNameList: [{toolType: Tools.Ellipse, labelNameList: ["Broken", "Fracture"]}]
-}}></Marker>
+        savedLabelInfo: [
+            [{
+                data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837]}",
+                label: "Broken",
+                toolType: "Ellipse" as Tools
+            }]
+        ],
+        toolTypes: ["Polygon" as Tools],
+        labelNameList: [{ toolType: Tools.Ellipse, labelNameList: ["Broken", "Fracture"] }]
+    }}></Marker>
+</div>;
+
+export const LoadPdf = () => <div style={{ height: "800px", width: "100%" }}>
+    <div><a href="http://www.africau.edu/images/default/sample.pdf">PDF from africau</a></div>
+    <Marker dziUrl={"https://maist.yonsei.ac.kr/example/sample.pdf"} options={{
+        savedLabelInfo: [
+            [{
+                data: "{\"location\":[[[77417.88912540296,-355556.6615353565],[229135.83564294223,-355556.6615353565],[229135.83564294223,-108493.07686059561],[77417.88912540296,-108493.07686059561],[77417.88912540296,-355556.6615353565]]]}",
+                toolType: "Box" as Tools,
+                label: "Broken"
+            }],
+            [{
+                data: "{\"location\":[[[469386.97017178684,-290069.2375520318],[639803.3247335872,-290069.2375520318],[639803.3247335872,-156323.54731004464],[469386.97017178684,-156323.54731004464],[469386.97017178684,-290069.2375520318]]]}",
+                toolType: "Box" as Tools,
+                label: "Broken"}]],
+        toolTypes: ["Polygon" as Tools],
+        labelNameList: [{ toolType: Tools.Box, labelNameList: ["Broken", "Fracture"] }]
+    }}></Marker>
 </div>;

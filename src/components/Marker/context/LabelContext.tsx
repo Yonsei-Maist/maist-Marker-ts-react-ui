@@ -1,16 +1,19 @@
 import React from 'react';
 import { Feature } from 'ol';
 import BaseMark from '../ui/mark/BaseMark';
-import { Tools } from '../ui';
+import { LabelInfo, Tools } from '../ui';
 
 export interface LabelInformation {
     labelName: string;
 }
 
 export interface LabelContextObject {
-    labelList: BaseMark[];
+    currentPageNo: number;
+    pageLabelList: Map<number, BaseMark[]>;
     selectedFeatures?: Feature[];
     globalLabelNameList: string[];
+    setCurrentPageNo: (page: number) => void;
+    initPageLabelList: (pages: number, initPageLabelList?: LabelInfo[][], converter?: (mark: LabelInfo) => BaseMark) => void;
     setSelectedFeatures?: (feature?: Feature[]) => void;
     addLabel: (feature: BaseMark, labelName?:string) => void;
     removeLabel: (feature: Feature) => void;

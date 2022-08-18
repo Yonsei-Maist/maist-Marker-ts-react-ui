@@ -32,6 +32,8 @@ import BaseMark from './mark/BaseMark';
 export const TOOL_TYPE = "TOOL_TPYE";
 export const TOOL_MEMO = "TOOL_MEMO";
 
+export const IS_DRAWER_VECTOR = "IS_DRAWER_VECTOR";
+
 export enum Tools {
     None = "None",
     Pencil = "LineString",
@@ -60,7 +62,7 @@ export interface ToolNavigatorProps {
     option?: ToolOption;
     lengthFormat?: (length:number) => string;
     areaFormat?: (area: number) => string;
-    labelInfo?: LabelInfo[];
+    pageLabelInfo?: LabelInfo[][];
 };
 
 export interface ToolContext {
@@ -77,9 +79,9 @@ export interface ToolContext {
 const defaultLengthFormat = (line:number) => {return line + " px"};
 const defaultAreaFormat = (area:number) => {return area + " px\xB2"}
 
-function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavigatorProps) {
+function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: ToolNavigatorProps) {
     const { map, isLoaded } = useContext(MapContext) as MapObject;
-    const { labelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel, toolTypeChanged } = useContext(LabelContext) as LabelContextObject;
+    const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel, toolTypeChanged } = useContext(LabelContext) as LabelContextObject;
     const context = useRef({drawerMap: new Map<Tools, BaseDrawer<BaseMark>>(), toolType: Tools.None} as ToolContext);
     const [toolType, setToolType] = useState(Tools.None);
     const [toolMode, setToolMode] = useState(Mode.Draw);
@@ -131,21 +133,37 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
     }
 
     const load = () => {
-        if (labelInfo) {
-            const {source, drawerMap} = context.current;
-            
-            for (let i = 0; i < labelInfo.length; i++) {
-                let item = labelInfo[i];
+        if (pageLabelInfo) {
+            const {drawerMap} = context.current;
+
+            initPageLabelList(-1, pageLabelInfo, (item: LabelInfo) => {
                 let drawer = drawerMap.get(item.toolType);
                 if (drawer) {
                     let mark = drawer.createMark(item.data);
                     mark.label = {labelName: item.label};
                     mark.feature.setId(uuidv4());
-                    source.addFeature(mark.feature);
-                    addLabel(mark);
+                    
+                    return mark;
                 }
-            }
+            });
         }
+    }
+
+    function onModeButtonClickListener(type: Mode) {
+        setToolType(Tools.None);
+        setToolMode(type);
+    }
+
+    function onToolButtonClickListener(type: Tools) {
+        setToolMode(Mode.Draw);
+        setToolType(type);
+    }
+
+    function checkActive() {
+        if (toolMode == Mode.Select)
+            return toolMode;
+        else
+            return toolType;
     }
 
     useEffect(() => {
@@ -164,6 +182,8 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                     }
                 });
 
+                layer.set(IS_DRAWER_VECTOR, true);
+
                 let select = new Select({
                     style: function (feature: Feature) {
                         let type = feature.get(TOOL_TYPE);
@@ -177,6 +197,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                     const {drawerMap} = context.current;
                     let featureList = [] as Feature[];
                     let list = e.target.getFeatures().getArray() as Feature[];
+                    let labelList = pageLabelList.get(currentPageNo);
                     for (let i = 0; i < list.length; i++) {
                         for (let j = 0; j < labelList.length; j++) {
 
@@ -275,15 +296,27 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
                     select
                 }
             }
-        }
-    }, [isLoaded]);
 
-    useEffect(() => {
-        if (map && isLoaded) {
             load();
         }
+    }, [map, isLoaded]);
 
-    }, [labelInfo, map, isLoaded]);
+    useEffect(() => {
+        const {source} = context.current;
+
+        if (source) {
+
+            source.clear();
+
+            let labelInfo = pageLabelList.get(currentPageNo);
+    
+            for (let i=0;i<labelInfo.length;i++) {
+                let mark = labelInfo[i];
+                source.addFeature(mark.feature);
+            }
+        }
+
+    }, [pageLabelList, currentPageNo]);
 
     useEffect(() => {
         if (context.current && map) {
@@ -333,28 +366,9 @@ function ToolNavigator({ option, lengthFormat, areaFormat, labelInfo }: ToolNavi
         }
     }, [toolMode]);
 
-    function onModeButtonClickListener(type: Mode) {
-        setToolType(Tools.None);
-        setToolMode(type);
-    }
-
-    function onToolButtonClickListener(type: Tools) {
-        setToolMode(Mode.Draw);
-        setToolType(type);
-    }
-
-    function checkActive() {
-        if (toolMode == Mode.Select)
-            return toolMode;
-        else
-            return toolType;
-    }
-
-    let active = checkActive();
-
     return (
         <Box position={"absolute"} left={"15px"} top={"15px"}>
-            <ToggleButtonGroup value={active} orientation='vertical' sx={{background: "white"}}>
+            <ToggleButtonGroup value={checkActive()} orientation='vertical' sx={{background: "white"}}>
                 <ToggleButton value={Mode.Select} key={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
                     {
                         toolMode == Mode.Select ?
