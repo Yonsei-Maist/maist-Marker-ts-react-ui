@@ -55,7 +55,7 @@ export interface MarkerState {
 
 export interface MarkerProps {
     dziUrl: string;
-    saveHandler?: (labelList: LabelInfo[], memo?: string) => void;
+    saveHandler?: (labelList: LabelInfo[][], memo?: string) => void;
     axiosInstance?: AxiosInstance;
     options?: MarkerOptions;
     lengthFormat?: (length:number) => string;
@@ -120,7 +120,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const getMemo = () => {
         let memo = "";
         if (providerState.current) {
-            memo = providerState.current.memo
+            memo = providerState.current.getMemo();
         }
 
         return memo;
@@ -129,7 +129,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const onSave = () => {
         let labels = getLabel(true);
         let memo = getMemo();
-        
+        console.log(memo);
         if (saveHandler) {
             saveHandler(labels, memo);
             localStorage.removeItem(storage_key);

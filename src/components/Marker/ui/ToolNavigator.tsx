@@ -133,19 +133,23 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
     }
 
     const load = () => {
-        if (pageLabelInfo) {
-            const {drawerMap} = context.current;
+        if (map && isLoaded) {
+            if (pageLabelInfo) {
+                const {drawerMap} = context.current;
 
-            initPageLabelList(-1, pageLabelInfo, (item: LabelInfo) => {
-                let drawer = drawerMap.get(item.toolType);
-                if (drawer) {
-                    let mark = drawer.createMark(item.data);
-                    mark.label = {labelName: item.label};
-                    mark.feature.setId(uuidv4());
-                    
-                    return mark;
-                }
-            });
+                initPageLabelList(-1, pageLabelInfo, (item: LabelInfo) => {
+                    let drawer = drawerMap.get(item.toolType);
+                    if (drawer) {
+                        let mark = drawer.createMark(item.data);
+                        mark.label = {labelName: item.label};
+                        mark.feature.setId(uuidv4());
+                        
+                        return mark;
+                    }
+                });
+            } else {
+                initPageLabelList(1);
+            }
         }
     }
 
@@ -296,10 +300,12 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
                     select
                 }
             }
-
-            load();
         }
     }, [map, isLoaded]);
+
+    useEffect(() => {
+        load();
+    }, [pageLabelInfo, map, isLoaded]);
 
     useEffect(() => {
         const {source} = context.current;
@@ -310,9 +316,11 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
 
             let labelInfo = pageLabelList.get(currentPageNo);
     
-            for (let i=0;i<labelInfo.length;i++) {
-                let mark = labelInfo[i];
-                source.addFeature(mark.feature);
+            if (labelInfo) {
+                for (let i=0;i<labelInfo.length;i++) {
+                    let mark = labelInfo[i];
+                    source.addFeature(mark.feature);
+                }
             }
         }
 

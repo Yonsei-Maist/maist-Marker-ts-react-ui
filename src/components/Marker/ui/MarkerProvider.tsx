@@ -21,7 +21,7 @@ import { LabelInfo } from './Marker';
 
 export interface MapProviderState {
     pageLabelList: BaseMark[][],
-    memo?: string
+    getMemo: () => string;
 }
 
 export interface LabelNameInfo {
@@ -45,17 +45,29 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
     const [labelContext, setLabelContext] = useState({pageLabelList: new Map<number, BaseMark[]>(), currentPageNo: 1, globalLabelNameList: [] as string[]} as LabelContextObject);
     const [{ loading, data, error }, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
 
+    function getMemo() {
+        const {map} = mapObj;
+        if (map) {
+            return map.get(MAP_MEMO);
+        }
+
+        return "";
+    }
+
     useImperativeHandle(ref, () => {
         let pageLabelList = [];
+        const {map} = mapObj;
         for (let i=0;i<labelContext.pageLabelList.size;i++) {
             let labelList = labelContext.pageLabelList.get(i + 1);
 
             pageLabelList.push(labelList);
         }
 
+        let localMemo = map? map.get(MAP_MEMO): memo;
+
         return {
             pageLabelList: pageLabelList,
-            memo: mapObj.map ? mapObj.map.get(MAP_MEMO) : memo
+            getMemo: getMemo
         } as MapProviderState;
     });
 
@@ -83,12 +95,12 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             }
         }
 
-        setLabelContext(() => ({...labelContext, pageLabelList: new Map(pageLabelList), setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+        refresh({pageLabelList: new Map(pageLabelList)});
     }
 
     function setCurrentPageNo(page: number) {
         labelContext.currentPageNo = page;
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+        refresh();
     }
 
     function getLabelNameList(toolType: Tools) {
@@ -98,21 +110,28 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
 
     function toolTypeChanged(toolType: Tools) {
         let globalLabelNameList = getLabelNameList(toolType);
+        
+        labelContext.globalLabelNameList = [...globalLabelNameList];
 
-        setLabelContext(() => ({...labelContext, globalLabelNameList, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+        refresh({globalLabelNameList});
     }
 
-    function refresh() {
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+    function refresh(obj?: any) {
+        let newObj = {...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList};
+
+        if (obj)
+            newObj = {...newObj, ...obj};
+        
+        setLabelContext(() => ({...newObj}));
     }
 
     function setSelectedFeatures(features?: Feature[]) {
-        setLabelContext(() => ({...labelContext, selectedFeatures: features, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+        refresh({selectedFeatures: features});
     }
 
     function addLabel(mark: BaseMark) {
         labelContext.pageLabelList.get(labelContext.currentPageNo).push(mark);
-        setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+        refresh();    
     }
 
     function removeLabel(feature: Feature) {
@@ -127,8 +146,17 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
 
         if (removeIdx > -1) {
             labelList.splice(removeIdx, 1);
-            setLabelContext(() => ({...labelContext, selectedFeatures: undefined, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
+            refresh({selectedFeatures: undefined});    
         }
+    }
+
+    function setMap(obj?: any) {
+        let newObj = {...mapObj, select, remove, unselect, clearSelection};
+        if (obj) {
+            newObj = {...newObj, ...obj};
+        }
+
+        setMapObj(() =>({...newObj}));
     }
 
     function clearSelection() {
@@ -146,7 +174,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             }
         }
 
-        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+        setMap();
     }
 
     function unselect(mark: BaseMark) {
@@ -164,7 +192,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             }
         }
 
-        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+        setMap();
     }
 
     function select(mark: BaseMark) {
@@ -182,7 +210,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             }
         }
 
-        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+        setMap();
     }
 
     function remove(marker: BaseMark) {
@@ -200,7 +228,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             }
         }
 
-        setMapObj({...mapObj, select, remove, unselect, clearSelection});
+        setMap();
     }
 
     useEffect(() => {
@@ -211,11 +239,10 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 controls: defaults({ zoom: false, rotate: false}).extend([]),
                 target: 'map'
             });
-            
+
             map.set(MAP_MEMO, memo);
-            setMapObj({...mapObj, map: map, remove, select, unselect, clearSelection});
-            setLabelContext(() => ({...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, toolTypeChanged, getLabelNameList, setCurrentPageNo, initPageLabelList}));
-            
+            setMap({map});
+            refresh();
             refetch();
             return () => map.setTarget(undefined);
         }
@@ -245,7 +272,7 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 evt.preventDefault();
             });
             
-            setMapObj({...mapObj, isLoaded: true, select, remove, unselect, clearSelection});
+            setMap({isLoaded: true});
         }
     }, [data]);
 

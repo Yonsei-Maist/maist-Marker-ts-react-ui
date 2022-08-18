@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 // import Marker from "./Marker";
 
-import { Marker } from ".."
+import { LabelInfo, Marker } from ".."
 import { Tools } from "../components/marker/ui/ToolNavigator";
 import "ol/ol.css";
 
@@ -24,7 +24,7 @@ export const Image = () => <div style={{ height: "800px", width: "100%" }}>
 
 export const Dicom = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [] }}></Marker>
+    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: []}}></Marker>
 </div>;
 
 export const DicomSetWindow = () => <div style={{ height: "800px", width: "100%" }}>
@@ -34,7 +34,7 @@ export const DicomSetWindow = () => <div style={{ height: "800px", width: "100%"
 
 export const PDF = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href="http://www.africau.edu/images/default/sample.pdf">PDF from africau</a></div>
-    <Marker dziUrl={"https://maist.yonsei.ac.kr/example/sample.pdf"}></Marker>
+    <Marker dziUrl={"https://maist.yonsei.ac.kr/example/sample.pdf"} options={{savedLabelInfo:[[]]}}></Marker>
 </div>;
 
 export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
@@ -60,20 +60,29 @@ export const ToolLengthOnly = () => <div style={{ height: "800px", width: "100%"
     <Marker dziUrl={url} options={{ toolTypes: ["Length" as Tools] }}></Marker>
 </div>;
 
-export const Load = () => <div style={{ height: "800px", width: "100%" }}>
+export const Load = () => {
+    const [loadedLabelInfo, setLoadedLabelInfo] = useState([] as LabelInfo[][]);
+
+    useEffect(() => {
+        setTimeout(() => {
+            setLoadedLabelInfo([
+                [{
+                    data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837]}",
+                    label: "Broken",
+                    toolType: "Ellipse" as Tools
+                }]
+            ])
+        }, 1000);
+    }, []);
+    
+    return <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
     <Marker dziUrl={url} options={{
-        savedLabelInfo: [
-            [{
-                data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837]}",
-                label: "Broken",
-                toolType: "Ellipse" as Tools
-            }]
-        ],
+        savedLabelInfo: loadedLabelInfo,
         toolTypes: ["Polygon" as Tools],
         labelNameList: [{ toolType: Tools.Ellipse, labelNameList: ["Broken", "Fracture"] }]
     }}></Marker>
-</div>;
+</div>};
 
 export const LoadPdf = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href="http://www.africau.edu/images/default/sample.pdf">PDF from africau</a></div>
