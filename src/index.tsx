@@ -9,5 +9,6 @@ export {
     LabelContextObject, 
     LabelInformation, 
     MapContext, 
-    MapObject
+    MapObject,
+    LabelMemoType
 } from "./components/marker";

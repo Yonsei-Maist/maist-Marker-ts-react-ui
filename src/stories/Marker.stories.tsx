@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 // import Marker from "./Marker";
 
-import { LabelInfo, Marker } from ".."
+import { LabelInfo, LabelMemoType, Marker } from ".."
 import { Tools } from "../components/marker/ui/ToolNavigator";
 import "ol/ol.css";
 
@@ -46,7 +46,9 @@ export const LabelName = () => <div style={{ height: "800px", width: "100%" }}>
                 { toolType: Tools.Ellipse, labelNameList: ["CustomEllipse1", "CustomEllipse2"] },
                 { toolType: Tools.Box, labelNameList: ["CustomBox1", "CustomBox2"] }
             ],
-            toolTypes: ["Ellipse" as Tools, "Box" as Tools]
+            toolTypes: ["Ellipse" as Tools, "Box" as Tools],
+            labelMemoType: LabelMemoType.select,
+            labelMemoOptions: ["발목", "오른쪽 엄지발가락"]
         }} dziUrl={url}></Marker>
 </div>;
 
@@ -67,7 +69,7 @@ export const Load = () => {
         setTimeout(() => {
             setLoadedLabelInfo([
                 [{
-                    data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837]}",
+                    data: "{\"first\":[242760.73593477486,-294951.9929333207],\"last\":[464026.82356328866,-547805.6825006837],\"memo\":\"MEMO\"}",
                     label: "Broken",
                     toolType: "Ellipse" as Tools
                 }]

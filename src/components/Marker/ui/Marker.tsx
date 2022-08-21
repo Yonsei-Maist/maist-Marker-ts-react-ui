@@ -20,6 +20,7 @@ import 'ol/ol.css';
 import { HeaderString } from '../../../lib/dicomReader';
 import PDFPageControl from './controls/PDFPageControl';
 import { isPDF } from '../../../lib/PDFObject';
+import { LabelMemoType } from './controls/LabelMemoControl';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -70,6 +71,8 @@ export interface MarkerOptions {
     labelNameList?: LabelNameInfo[];
     dcmConnectHeader?: HeaderString[];
     dcmWithCredentials?: boolean;
+    labelMemoType?: LabelMemoType;
+    labelMemoOptions?: string[];
 }
 
 const defaultOptions: MarkerOptions = {
@@ -129,7 +132,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const onSave = () => {
         let labels = getLabel(true);
         let memo = getMemo();
-        console.log(memo);
+        console.log(labels);
         if (saveHandler) {
             saveHandler(labels, memo);
             localStorage.removeItem(storage_key);
@@ -252,7 +255,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
                     !options.readOnly &&
                     <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} pageLabelInfo={localLabelInfo} />
                 }
-                <LabelNavigator open={open} onOpenChange={() => {
+                <LabelNavigator open={open} labelMemoType={options.labelMemoType} labelMemoOptions={options.labelMemoOptions} onOpenChange={() => {
                     setOpen(false);
                 }} />
             </Box>

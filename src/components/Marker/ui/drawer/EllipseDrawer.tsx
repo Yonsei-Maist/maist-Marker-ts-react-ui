@@ -22,6 +22,10 @@ const isThumb = (coordinates: Coordinate[], point: Coordinate) => {
     return false;
 }
 
+const thumbFunc = (geometries: any) => {
+    return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
+}
+
 const calculateEllipse = (first: Coordinate, last: Coordinate): Polygon => {
     var line = new LineString([first, last]);
     var center = getCenter(line.getExtent());
@@ -63,6 +67,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
             new Point(last),
             new Polygon(circle.getCoordinates())
         ]);
+        geo.set("thumbFunc", thumbFunc(geo.getGeometries()), true);
 
         parsed.feature = new Feature(geo);
         parsed.toolType = Tools.Ellipse;
@@ -109,10 +114,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
                 (geometries[2] as Polygon).setCoordinates(circle.getCoordinates());
                 geometryCollection.setGeometries(geometries);
 
-                geometryCollection.set("thumbFunc", () => {
-                    let geometries = geometryCollection.getGeometries();
-                    return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
-                }, true);
+                geometryCollection.set("thumbFunc", thumbFunc(geometryCollection.getGeometries()), true);
                 return geometryCollection;
             }
         });
@@ -166,10 +168,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
                             (geometries[0] as Point).setCoordinates(newFirst);
                             (geometries[1] as Point).setCoordinates(newLast);
                             //modifyGeo.set("thumbFunc", () => {return [newFirst, newLast];}, true);
-                            modifyGeo.set("thumbFunc", () => {
-                                let geometries = modifyGeo.getGeometries();
-                                return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
-                            }, true);
+                            modifyGeo.set("thumbFunc", thumbFunc(modifyGeo.getGeometries()), true);
                         }
 
                         modifyGeo.setGeometries(geometries);
