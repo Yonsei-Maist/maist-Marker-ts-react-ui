@@ -5,10 +5,10 @@ const SPLIT_TXT = "|&&|";
 const DEFAULT_VALUE = "|NONE|"
 
 export enum LabelMemoType {
-    string,
-    select,
-    radio,
-    checkbox
+    string="string",
+    select="select",
+    radio="radio",
+    checkbox="checkbox"
 }
 
 interface LabelMemoControlProps {
