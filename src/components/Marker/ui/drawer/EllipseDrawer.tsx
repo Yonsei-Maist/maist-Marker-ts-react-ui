@@ -23,7 +23,7 @@ const isThumb = (coordinates: Coordinate[], point: Coordinate) => {
 }
 
 const thumbFunc = (geometries: any) => {
-    return [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
+    return () => [(geometries[0] as Point).getCoordinates(), (geometries[1] as Point).getCoordinates()];
 }
 
 const calculateEllipse = (first: Coordinate, last: Coordinate): Polygon => {
