@@ -24,12 +24,12 @@ export const Image = () => <div style={{ height: "800px", width: "100%" }}>
 
 export const Dicom = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: []}}></Marker>
+    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [], localSave: false}}></Marker>
 </div>;
 
 export const DicomSetWindow = () => <div style={{ height: "800px", width: "100%" }}>
     <div><a href='https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/'>Image from Medimodel</a></div>
-    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}" }}></Marker>
+    <Marker dziUrl={url} options={{ dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}", localSave: false}}></Marker>
 </div>;
 
 export const PDF = () => <div style={{ height: "800px", width: "100%" }}>

@@ -73,6 +73,7 @@ export interface MarkerOptions {
     dcmWithCredentials?: boolean;
     labelMemoType?: LabelMemoType;
     labelMemoOptions?: string[];
+    localSave?: boolean;
 }
 
 const defaultOptions: MarkerOptions = {
@@ -132,7 +133,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const onSave = () => {
         let labels = getLabel(true);
         let memo = getMemo();
-        console.log(labels);
+
         if (saveHandler) {
             saveHandler(labels, memo);
             localStorage.removeItem(storage_key);
@@ -144,20 +145,23 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         let labels = getLabel(false);
         let memo = getMemo();
         // save to local
-        localStorage.setItem(storage_key, JSON.stringify(labels));
-        localStorage.setItem(storage_memo_key, memo ? memo: "");
+        if (options.localSave) {
+            localStorage.setItem(storage_key, labels ? JSON.stringify(labels): "");
+            localStorage.setItem(storage_memo_key, memo ? memo: "");
+        }
     }
 
     const getLoadData = () => {
-        let data = localStorage.getItem(storage_key);
-        let memo = localStorage.getItem(storage_memo_key);
-        
-        if ((data && data.length > 2) || (memo && memo.length > 0)) {
-            setOpenConfirm(true);
-        } else {
-            setLocalCheck(false);
-        }
+        if (options.localSave) {
+            let data = localStorage.getItem(storage_key);
+            let memo = localStorage.getItem(storage_memo_key);
 
+            if ((data && data.length > 2) || (memo && memo.length > 0)) {
+                setOpenConfirm(true);
+            } else {
+                setLocalCheck(false);
+            }
+        }
     }
 
     const onLocalLoad = () => {
@@ -191,10 +195,14 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     }
 
     useEffect(() => {
-        getLoadData();
-        let id = setInterval(onLocalSave, 60 * 10 * 1000);
-
-        return () => clearInterval(id);
+        if (options.localSave) {
+            getLoadData();
+            let id = setInterval(onLocalSave, 60 * 10 * 1000);
+    
+            return () => clearInterval(id);
+        } else {
+            setLocalCheck(false);
+        }
     }, []);
 
     useEffect(() => {
