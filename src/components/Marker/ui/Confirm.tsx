@@ -17,6 +17,11 @@ function Confirm({onHandleConfirm, title, content, onHandleOpen, open}: ConfirmP
     }
 
     return <Dialog
+        onKeyUp={(e) => {
+            console.log(e);
+            if (e.key == "Enter")
+                onHandleConfirmResult(true);  
+        }}
         open={open}
         onClose={onHandleOpen}
         aria-labelledby="alert-dialog-title"

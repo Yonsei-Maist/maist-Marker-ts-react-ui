@@ -3,13 +3,13 @@
  * @author Chanwoo Gwon, Yonsei Univ. Researcher, since 2020.05. ~
  * @Date 2021.10.27
  */
-import React, { memo, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { Fragment, KeyboardEvent, memo, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import MapProvider, { LabelNameInfo, MapProviderState } from './MarkerProvider';
 import MarkComponent from './MarkComponent';
 import ToolNavigator, { ToolNavigatorProps, ToolOption, Tools, TOOL_TYPE } from './ToolNavigator';
 import LabelNavigator from './LabelNavigator';
-import { Box, Button, Card, IconButton, styled, TextField } from '@mui/material';
-import { ArrowCircleLeft, ArrowLeft, ArrowRight } from '@mui/icons-material';
+import { Box, Button, Card, IconButton, Snackbar, styled, TextField } from '@mui/material';
+import { ArrowCircleLeft, ArrowLeft, ArrowRight, Close } from '@mui/icons-material';
 import PaletteNavigator from './PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
 import BaseMark from './mark/BaseMark';
@@ -56,10 +56,10 @@ export interface MarkerState {
 
 export interface MarkerProps {
     dziUrl: string;
-    saveHandler?: (labelList: LabelInfo[][], memo?: string) => void;
+    saveHandler?: (labelList: LabelInfo[][], memo?: string, callback?: () => void) => void;
     axiosInstance?: AxiosInstance;
     options?: MarkerOptions;
-    lengthFormat?: (length:number) => string;
+    lengthFormat?: (length: number) => string;
     areaFormat?: (area: number) => string;
 };
 
@@ -82,7 +82,7 @@ const defaultOptions: MarkerOptions = {
     labelNameList: []
 }
 
-function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, options}: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, options }: MarkerProps, ref: Ref<MarkerState>) {
     const providerState = useRef(null as MapProviderState | null);
     const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
@@ -91,6 +91,8 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
     const [openConfirm, setOpenConfirm] = useState(false);
     const [memo, setMemo] = useState(options.savedMemo);
     const [localCheck, setLocalCheck] = useState(true);
+
+    const [saveNotificationOpen, setSaveNotificationOpen] = useState(false);
 
     const storage_key = LOCAL_STORAGE_KEY + dziUrl;
     const storage_memo_key = LOCAL_STORAGE_KEY + dziUrl + "memo";
@@ -102,22 +104,22 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
             for (let i = 0; i < providerState.current.pageLabelList.length; i++) {
                 let currentLabelList = providerState.current.pageLabelList[i];
                 let pageLabelList = [];
-                for (let j = 0;j<currentLabelList.length;j++) {
+                for (let j = 0; j < currentLabelList.length; j++) {
 
                     let item = currentLabelList[j];
-                
+
                     pageLabelList.push({
                         data: baseDrawer.createSaveData(item, toObject),
                         toolType: item.feature.get(TOOL_TYPE),
                         label: item.label.labelName
                     } as LabelInfo);
                 }
-                
+
                 labelList.push(pageLabelList);
             }
 
         }
-        
+
         return labelList;
     }
 
@@ -135,9 +137,11 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         let memo = getMemo();
 
         if (saveHandler) {
-            saveHandler(labels, memo);
+            saveHandler(labels, memo, () => {setSaveNotificationOpen(true);});
             localStorage.removeItem(storage_key);
             localStorage.removeItem(storage_memo_key);
+        } else {
+            setSaveNotificationOpen(true);
         }
     };
 
@@ -146,8 +150,8 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         let memo = getMemo();
         // save to local
         if (options.localSave) {
-            localStorage.setItem(storage_key, labels ? JSON.stringify(labels): "");
-            localStorage.setItem(storage_memo_key, memo ? memo: "");
+            localStorage.setItem(storage_key, labels ? JSON.stringify(labels) : "");
+            localStorage.setItem(storage_memo_key, memo ? memo : "");
         }
     }
 
@@ -194,11 +198,15 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         }
     }
 
+    const onHandleCloseSaveNotification = () => {
+        setSaveNotificationOpen(false);
+    }
+
     useEffect(() => {
         if (options.localSave) {
             getLoadData();
             let id = setInterval(onLocalSave, 60 * 10 * 1000);
-    
+
             return () => clearInterval(id);
         } else {
             setLocalCheck(false);
@@ -249,7 +257,7 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
         <MapProvider load={localCheck} ref={providerState} dziUrl={dziUrl} axiosInstance={axiosInstance} labelNameList={options.labelNameList} header={options.dcmConnectHeader} withCredentials={options.dcmWithCredentials} memo={memo}>
             {
                 isPDF(dziUrl) &&
-                <PDFPageControl/>
+                <PDFPageControl />
             }
             <Box ref={boxRef} height={"100%"} position={"relative"}>
                 <MarkerMain open={open} />
@@ -268,6 +276,18 @@ function Marker({ dziUrl, lengthFormat, areaFormat, saveHandler, axiosInstance, 
                 }} />
             </Box>
             <Confirm open={openConfirm} title={"로컬 데이터 확인"} content={"로컬에 저장된 데이터가 발견되었습니다. 불러오시겠습니까?"} onHandleOpen={onHandleOpen} onHandleConfirm={onHandleLocalLoad} />
+            <Snackbar
+                open={saveNotificationOpen}
+                autoHideDuration={2000}
+                onClose={onHandleCloseSaveNotification}
+                color="white"
+                message="저장 완료"
+                action={
+                    <Button onClick={onHandleCloseSaveNotification}>
+                        <Close/>
+                    </Button>
+                }
+            />
         </MapProvider>
     );
 }

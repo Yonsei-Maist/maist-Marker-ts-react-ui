@@ -98,7 +98,14 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
         }
     };
 
-    const onHandleSaveServer = (confirm) => {
+    const onHandleShortcuts = (e: globalThis.KeyboardEvent) => {
+        e.preventDefault();
+        if (e.ctrlKey && e.key.toLowerCase() == "s" || e.metaKey && e.key.toLowerCase() == "s") {
+            onHandleSave();
+        }
+    }
+
+    const onHandleSaveServer = (confirm: boolean) => {
         if (confirm) {
             onSaveServer();
         }
@@ -116,6 +123,14 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
             }
         }
     }, [map, isLoaded]);
+
+    useEffect(() => {
+        document.removeEventListener('keydown', onHandleShortcuts);
+        document.addEventListener('keydown', onHandleShortcuts);
+        return () => {
+            document.removeEventListener('keydown', onHandleShortcuts);
+        }
+    }, []);
 
     return <Box sx={{
         position: "absolute",
