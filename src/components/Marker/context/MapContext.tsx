@@ -7,6 +7,7 @@ export const MAP_MEMO = "MAP_MEMO";
 export interface MapObject {
     map?: Map;
     isLoaded: boolean;
+    redrawFeatures: () => void;
     clearSelection: () => void;
     select: (mark: BaseMark) => void;
     remove: (mark: BaseMark) => void;

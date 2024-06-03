@@ -1,40 +1,53 @@
 import { Geometry, LineString } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
-import BasicDrawer from "./BaseDrawer";
 
 import { Feature } from "ol";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { measureStyleFunciton } from "./Styler";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
+import { Tools, TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
 import { Style } from "ol/style";
-import BaseMark from "../mark/BaseMark";
+import VectorLayer from "ol/layer/Vector";
+import { FeatureLike } from "ol/Feature";
+
+import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
+import BaseDrawer from "./BaseDrawer";
 
 class LengthMark extends BaseMark {
     location: Coordinate[];
 
-    refresh() {
+    refresh(): LabelFormat {
         let feature = this.feature;
 
         if (feature) {
             this.location = (feature.getGeometry() as LineString).getCoordinates();
+            const flattenedPoints = this.location.reduce((acc, point) => acc.concat(point), []);
+
+            // Adjust y coordinates if they are negative
+            const adjustedPoints = flattenedPoints.map((value, index) => index % 2 !== 0 && value < 0 ? Math.abs(value) : value);
+
+            return {
+                mark: this,
+                coco: adjustedPoints
+            };
         }
+
+        return super.refresh();
     }
 }
 
-class LengthDrawer extends BasicDrawer<LengthMark> {
+class LengthDrawer extends BaseDrawer<LengthMark> {
     formatLength: (line:any) =>string;
 
     createMark(saveData: string, memo?: string): LengthMark {
-        let parsed = this.loadSaveData(LengthMark, saveData);
-        let geo = new LineString(parsed.location);
-        parsed.feature = new Feature(geo);
-        parsed.toolType = Tools.Length;
-        parsed.feature.set(TOOL_MEMO, memo);
-        parsed.feature.set(TOOL_TYPE, Tools.Length);
+        let mark = this.loadSaveData(LengthMark, saveData);
+        let geo = new LineString(mark.location);
+        mark.feature = new Feature(geo);
+        mark.toolType = Tools.Length;
+        mark.feature.set(TOOL_MEMO, memo);
+        mark.feature.set(TOOL_TYPE, Tools.Length);
 
-        return parsed;
+        return mark;
     }
 
     fromFeature(feature: Feature<Geometry>): LengthMark {
@@ -52,9 +65,9 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
         this.formatLength = formatLength
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             type: "LineString",
             freehand: false,
             condition: this.condition,
@@ -66,7 +79,7 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
         return this.draw;
     }
 
-    createModify(select:Select) {
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
         this.modify = new Modify({
             condition: function (event) {
                 return primaryAction(event) && !platformModifierKeyOnly(event);
@@ -78,7 +91,7 @@ class LengthDrawer extends BasicDrawer<LengthMark> {
         return this.modify;
     }
 
-    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
+    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
         return measureStyleFunciton(feature, customFunc);
     }
 }

@@ -2,13 +2,15 @@ import { Geometry } from "ol/geom";
 import { Draw } from "ol/interaction";
 import { Vector } from "ol/source";
 import BaseMark from "../mark/BaseMark";
-import { ToolContext, Tools } from "../ToolNavigator";
+import { ToolContext, Tools } from "../nevigator/ToolNavigator";
 import BasicDrawer from "./BaseDrawer";
+import Feature from "ol/Feature";
+import VectorLayer from "ol/layer/Vector";
 
 class NoneDrawer extends BasicDrawer<BaseMark> {
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             type: "LineString",
             freehand: false
         });

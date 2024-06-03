@@ -1,13 +1,26 @@
 import { Geometry, Point, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
 import BasicDrawer from "./BaseDrawer";
 import { createBox } from 'ol/interaction/Draw';
 import { never, platformModifierKeyOnly, primaryAction } from "ol/events/condition";
 import { Feature } from "ol";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
-import BaseMark from "../mark/BaseMark";
+import { Tools, TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
+import VectorLayer from "ol/layer/Vector";
+
+function fitBox(extent: number[], geometry: Polygon) {
+
+    var coords = geometry.getCoordinates()[0];
+                        
+    var adjustedCoords = coords.map(function(coord) {
+        var x = Math.max(extent[0], Math.min(coord[0], extent[2]));
+        var y = Math.max(extent[1], Math.min(coord[1], extent[3]));
+        return [x, y];
+    });
+
+    geometry.setCoordinates([adjustedCoords]);
+}
 
 export function calculateCenter(geometry: Polygon, point: number[]): any {
     let coordinates = geometry.getCoordinates()[0];
@@ -28,7 +41,7 @@ export function calculateCenter(geometry: Polygon, point: number[]): any {
             x = point[0];
         else
             x = coordinate[0];
-        
+
         if (coordinate[1] == closest[1] || coordinate[1] == point[1])
             y = point[1];
         else
@@ -43,23 +56,45 @@ export function calculateCenter(geometry: Polygon, point: number[]): any {
 class BoxMark extends BaseMark {
     location: Coordinate[][];
 
-    refresh() {
+    refresh(): LabelFormat {
         let feature = this.feature;
-        this.location = (feature.getGeometry() as Polygon).getCoordinates();
+        
+        if (feature) {
+            this.location = (feature.getGeometry() as Polygon).getCoordinates();
+            let location_one = this.location[0];
+            const xs = location_one.map(point => Math.abs(point[0]));
+            const ys = location_one.map(point => Math.abs(point[1]));
+    
+            const minX = Math.min(...xs);
+            const minY = Math.min(...ys);
+            const maxX = Math.max(...xs);
+            const maxY = Math.max(...ys);
+    
+            const width = maxX - minX;
+            const height = maxY - minY;
+    
+            return {
+                mark: this,
+                coco: [minX, minY, width, height],  // x, y, w, h
+                pascal_voc: [minX, minY, maxX, maxY]
+            }
+        }
+
+        return super.refresh();
     }
 }
 
 class BoxDrawer extends BasicDrawer<BoxMark> {
 
     createMark(saveData: string, memo?: string): BoxMark {
-        let parsed = this.loadSaveData(BoxMark, saveData);
+        let mark = this.loadSaveData(BoxMark, saveData);
 
-        let geo = new Polygon(parsed.location);
-        parsed.feature = new Feature(geo);
-        parsed.feature.set(TOOL_MEMO, memo);
-        parsed.feature.set(TOOL_TYPE, Tools.Box);
-        parsed.toolType = Tools.Box;
-        return parsed;
+        let geo = new Polygon(mark.location);
+        mark.feature = new Feature(geo);
+        mark.feature.set(TOOL_MEMO, memo);
+        mark.feature.set(TOOL_TYPE, Tools.Box);
+        mark.toolType = Tools.Box;
+        return mark;
     }
 
     fromFeature(feature: Feature<Geometry>): BoxMark {
@@ -73,20 +108,24 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         return mark;
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             freehand: false,
             type: "Circle",
             freehandCondition: this.condition,
             geometryFunction: createBox()
         });
 
+        this.draw.on("drawend", function(event) {
+            fitBox(layer.getExtent(), event.feature.getGeometry() as Polygon);
+        });
+
         return this.draw;
     }
-    
-    createModify(select:Select) {
-        const defaultStyle = new Modify({features:select.getFeatures()}).getOverlay().getStyleFunction();
+
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
+        const defaultStyle = new Modify({ features: select.getFeatures() }).getOverlay().getStyleFunction();
         this.modify = new Modify({
             condition: function (event) {
                 return primaryAction(event) && !platformModifierKeyOnly(event);
@@ -118,7 +157,7 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
                     let geometry = feature.getGeometry() as Polygon;
                     feature.set(
                         'modifyGeometry',
-                        { geometry: geometry.clone(), thumbFunc: () => {return geometry.getCoordinates();}},
+                        { geometry: geometry.clone(), thumbFunc: () => { return geometry.getCoordinates(); } },
                         true
                     );
                 }
@@ -132,10 +171,13 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
                     if (modifyGeometry) {
                         feature.setGeometry(modifyGeometry.geometry);
                         feature.unset('modifyGeometry', true);
+
+                        fitBox(layer.getExtent(), modifyGeometry.geometry as Polygon);
                     }
                 }
             });
         });
+
         this.modify.setActive(false);
         return this.modify;
     }

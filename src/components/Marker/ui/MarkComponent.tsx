@@ -36,7 +36,4 @@ function MarkComponent({}: MarkComponentProps) {
     );
 }
 
-MarkComponent.defaultProps = {
-};
-
 export default MarkComponent;

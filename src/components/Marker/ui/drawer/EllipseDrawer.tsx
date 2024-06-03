@@ -3,13 +3,16 @@ import { Coordinate } from "ol/coordinate";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { Geometry, Circle, Polygon, Point, GeometryCollection, LineString, MultiPoint } from "ol/geom";
 import { Draw, Select, Modify } from "ol/interaction";
-import { Vector } from "ol/source";
-import { TOOL_TYPE, Tools, TOOL_MEMO } from "../ToolNavigator";
+import { TOOL_TYPE, Tools, TOOL_MEMO } from "../nevigator/ToolNavigator";
 import BasicDrawer from "./BaseDrawer";
 import { fromCircle } from 'ol/geom/Polygon'
 import { getCenter } from "ol/extent";
 import { Style } from "ol/style";
-import BaseMark from "../mark/BaseMark";
+import BaseMark, { LabelFormat } from "../mark/BaseMark";
+import VectorLayer from "ol/layer/Vector";
+import { FeatureLike } from "ol/Feature";
+
+import { Map} from "ol"
 
 const isThumb = (coordinates: Coordinate[], point: Coordinate) => {
     for (let i in coordinates) {
@@ -40,26 +43,75 @@ const calculateEllipse = (first: Coordinate, last: Coordinate): Polygon => {
     return circle;
 }
 
+export function constrainEllipse(ellipse: GeometryCollection, extent: number[]) {
+    const geometries = ellipse.getGeometries();
+    const first = (geometries[0] as Point).getCoordinates();
+    const last = (geometries[1] as Point).getCoordinates();
+    const coords = [first, last]
+    var dx = 0, dy = 0;
+
+    coords.forEach(function (coord) {
+        if (coord[0] < extent[0]) dx = Math.max(dx, extent[0] - coord[0]);
+        if (coord[0] > extent[2]) dx = Math.min(dx, extent[2] - coord[0]);
+        if (coord[1] < extent[1]) dy = Math.max(dy, extent[1] - coord[1]);
+        if (coord[1] > extent[3]) dy = Math.min(dy, extent[3] - coord[1]);
+    });
+
+    var constrainedCoords = coords.map(function (coord) {
+        return [coord[0] + dx, coord[1] + dy];
+    });
+    
+    (geometries[0] as Point).setCoordinates(constrainedCoords[0]);
+    (geometries[1] as Point).setCoordinates(constrainedCoords[1]);
+
+    ellipse.setGeometries(geometries);
+    ellipse.set("thumbFunc", thumbFunc(ellipse.getGeometries()), true);
+}
+
 class EllipseMark extends BaseMark {
     first: Coordinate;
     last: Coordinate;
 
-    refresh() {
+    refresh(): LabelFormat {
         let feature = this.feature;
         if (this.feature) {
             let geo = feature.getGeometry() as GeometryCollection;
             let geos = geo.getGeometries();
             this.first = (geos[0] as Point).getCoordinates();
             this.last = (geos[1] as Point).getCoordinates();
+
+            const xs = [this.first, this.last].map(point => point[0]);
+            const ys = [this.first, this.last].map(point => point[1]);
+    
+            const minX = Math.min(...xs);
+            const minY = Math.min(...ys);
+            const maxX = Math.max(...xs);
+            const maxY = Math.max(...ys);
+    
+            const width = maxX - minX;
+    
+            // If y coordinates are negative, adjust to positive
+            const adjustedMinY = Math.abs(minY);
+            const adjustedMaxY = Math.abs(maxY);
+    
+            const adjustedHeight = adjustedMaxY - adjustedMinY;
+
+            return {
+                mark: this,
+                coco: [minX, adjustedMinY, width, adjustedHeight],  // x, y, w, h
+                pascal_voc: [minX, minY, maxX, maxY]
+            };
         }
+
+        return super.refresh();
     }
 }
 
 class EllipseDrawer extends BasicDrawer<EllipseMark> {
     createMark(saveData: string, memo?: string): EllipseMark {
-        let parsed = this.loadSaveData(EllipseMark, saveData);
-        var first = parsed.first;
-        var last = parsed.last;
+        let mark = this.loadSaveData(EllipseMark, saveData);
+        let first = mark.first;
+        let last = mark.last;
 
         const circle = calculateEllipse(first, last);
         let geo = new GeometryCollection([
@@ -67,14 +119,15 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
             new Point(last),
             new Polygon(circle.getCoordinates())
         ]);
+
         geo.set("thumbFunc", thumbFunc(geo.getGeometries()), true);
 
-        parsed.feature = new Feature(geo);
-        parsed.toolType = Tools.Ellipse;
-        parsed.feature.set(TOOL_MEMO, memo);
-        parsed.feature.set(TOOL_TYPE, Tools.Ellipse);
+        mark.feature = new Feature(geo);
+        mark.toolType = Tools.Ellipse;
+        mark.feature.set(TOOL_MEMO, memo);
+        mark.feature.set(TOOL_TYPE, Tools.Ellipse);
 
-        return parsed;
+        return mark;
     }
 
     fromFeature(feature: Feature<Geometry>): EllipseMark {
@@ -87,9 +140,9 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         return mark;
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             freehand: false,
             type: "Circle",
             freehandCondition: this.condition,
@@ -132,7 +185,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         return this.draw;
     }
     
-    createModify(select:Select) {
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
         const defaultStyle = new Modify({features:select.getFeatures()}).getOverlay().getStyleFunction();
         this.modify = new Modify({
             condition: function (event) {
@@ -163,7 +216,6 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
                             }
 
                             newLast = modifyPoint;
-                            const circle = calculateEllipse(newFirst, newLast);
 
                             (geometries[0] as Point).setCoordinates(newFirst);
                             (geometries[1] as Point).setCoordinates(newLast);
@@ -206,8 +258,8 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         return this.modify;
     }
     
-    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
-        const style = super.getVectorStyle() as Style;
+    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
+        const style = super.getVectorStyle(feature) as Style;
         const collection = feature.getGeometry() as GeometryCollection;
         const first = (collection.getGeometries()[0] as Point).getCoordinates();
         const last = (collection.getGeometries()[1] as Point).getCoordinates();

@@ -5,20 +5,23 @@ import { LabelInfo, Tools } from '../ui';
 
 export interface LabelInformation {
     labelName: string;
+    color?: string;
 }
 
 export interface LabelContextObject {
     currentPageNo: number;
     pageLabelList: Map<number, BaseMark[]>;
     selectedFeatures?: Feature[];
-    globalLabelNameList: string[];
+    labelNameList: LabelInformation[];
+    selectedLabel: LabelInformation;
+    setSelectedLabel: (label: LabelInformation) => void;
+    setLabelNameList: (labelNameList: LabelInformation[]) => void;
     setCurrentPageNo: (page: number) => void;
     initPageLabelList: (pages: number, initPageLabelList?: LabelInfo[][], converter?: (mark: LabelInfo) => BaseMark) => void;
     setSelectedFeatures?: (feature?: Feature[]) => void;
     addLabel: (feature: BaseMark, labelName?:string) => void;
     removeLabel: (feature: Feature) => void;
     refresh: () => void;
-    toolTypeChanged: (toolType: Tools) => void;
     getLabelNameList: (toolType: Tools) => string[];
 }
 

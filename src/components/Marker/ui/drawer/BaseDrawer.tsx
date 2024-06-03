@@ -1,10 +1,16 @@
 import { Feature, MapBrowserEvent } from "ol";
-import { Geometry, MultiPoint, Polygon, SimpleGeometry } from "ol/geom";
+import { Geometry, MultiPoint, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
 import { Style, Fill, Stroke, Circle } from "ol/style";
-import BaseMark from "../mark/BaseMark";
-import { ToolContext, Tools } from "../ToolNavigator";
+import BaseMark, { LabelFormat } from "../mark/BaseMark";
+import { MARK, ToolContext, Tools } from "../nevigator/ToolNavigator";
+import VectorLayer from "ol/layer/Vector";
+import { FeatureLike } from "ol/Feature";
+import { Coordinate } from "ol/coordinate";
+
+import { Map} from "ol"
+import { MAP_HEIGHT, MAP_WIDTH } from "../../../../api/SourceReader";
+import { fitPoint, fitPoints } from "../../../../lib/sizeConverter";
 
 class BasicDrawer<T extends BaseMark> {
     draw:Draw;
@@ -22,6 +28,12 @@ class BasicDrawer<T extends BaseMark> {
 
     }
 
+    /**
+     * 
+     * @param type 
+     * @param saveData coco dataset format: x, y, x, y ...
+     * @returns 
+     */
     loadSaveData(type: new() => T, saveData: string) {
         return BaseMark.fillFromJSON<T>(type, saveData);
     }
@@ -34,22 +46,31 @@ class BasicDrawer<T extends BaseMark> {
         return {} as T;
     }
 
-    createSaveData(mark: BaseMark, toObject: boolean) {
-        mark.refresh();
-        let saving = {...mark};
+    createSaveData(map: Map, mark: BaseMark): LabelFormat {
+        let savedData = mark.refresh();
+        let saving = {...savedData.mark} as BaseMark;
         
         delete saving.feature;
         delete saving.id;
         delete saving.label;
         delete saving.toolType;
-        return toObject ? saving : JSON.stringify(saving);
+
+        savedData.mark = saving
+
+        let width = map.get(MAP_WIDTH);
+        let height = map.get(MAP_HEIGHT);
+
+        savedData.coco = fitPoints(width, height, savedData.coco, true);
+        savedData.pascal_voc = savedData.pascal_voc ? fitPoints(width, height, savedData.pascal_voc, true): savedData.pascal_voc;
+
+        return savedData;
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         return {} as Draw;
     }
 
-    createModify(select:Select) {
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
         return {} as Modify;
     }
 
@@ -82,43 +103,61 @@ class BasicDrawer<T extends BaseMark> {
         });
     }
 
-    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
+    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
+        let defaultColor = '#ff3333';
+        if (feature) {
+
+            let mark = feature.get(MARK) as BaseMark;
+            if (mark.label && mark.label.color) {
+                defaultColor = mark.label.color
+            }
+        }
+
         return new Style({
             //text: new Text({}),
             fill: new Fill({
-                color: 'rgba(255, 204, 51, 0.4)',
+                color: 'rgba(255, 255, 255, 0.1)',
             }),
             stroke: new Stroke({
-                color: '#ffcc33',
-                width: 2,
+                color: defaultColor,
+                width: 1,
             }),
             image: new Circle({
                 radius: 7,
                 fill: new Fill({
-                    color: '#ffcc33',
+                    color: defaultColor,
                 }),
             }),
-        })
+        }); 
     }
 
     getSelectBodyStyle(feature: Feature): Style {
+        let defaultColor = '#ff3333';
+        if (feature) {
+
+            let mark = feature.get(MARK) as BaseMark;
+            if (mark.label && mark.label.color) {
+                defaultColor = mark.label.color
+            }
+        }
+
         return new Style({
             geometry: function (feature) {
                 const modifyGeometry = feature.get('modifyGeometry');
                 return modifyGeometry ? modifyGeometry.geometry : feature.getGeometry();
             },
             fill: new Fill({
-                color: 'rgba(255, 255, 255, 0.4)',
+                color: 'rgba(255, 255, 255, 0.1)',
             }),
             stroke: new Stroke({
-                color: '#ffcc33',
+                color: defaultColor,
                 lineDash: [10, 10],
-                width: 2,
+                width: 1,
             }),
             image: new Circle({
                 radius: 7,
                 fill: new Fill({
-                    color: '#ffcc33',
+                    color: defaultColor,
                 }),
             }),
         });

@@ -88,15 +88,6 @@ export class DicomObject extends CanvasDrawer{
     }
 }
 
-export function fitSize(width: number, height: number) {
-    let mapSize = [1000000, 1000000];
-
-    let newWidth = mapSize[0];
-    let newHeight = mapSize[1] * height / width;
-
-    return [newWidth, newHeight];
-}
-
 export interface HeaderString {
     key: string;
     value: string;

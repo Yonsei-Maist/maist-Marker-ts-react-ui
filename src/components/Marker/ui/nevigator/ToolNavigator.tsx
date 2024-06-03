@@ -4,33 +4,40 @@ import { Vector } from 'ol/source';
 import { Vector as VectorLayer } from 'ol/layer'
 import { Select, Modify, Snap, Translate } from 'ol/interaction';
 
-import MapContext, { MapObject } from '../context/MapContext';
-import Geometry from 'ol/geom/Geometry';
+import MapContext, { MapObject } from '../../context/MapContext';
 import { DrawEvent } from 'ol/interaction/Draw';
 import {
+    never,
     platformModifierKeyOnly,
     primaryAction,
 } from 'ol/events/condition';
 import { Feature } from 'ol';
-import {LabelContext, LabelContextObject } from '../context';
+import {LabelContext, LabelContextObject, LabelInformation } from '../../context';
 
 import {v4 as uuidv4} from 'uuid';
-import BaseDrawer from './drawer/BaseDrawer';
-import BoxDrawer from './drawer/BoxDrawer';
-import AreaDrawer from './drawer/AreaDrawer';
-import LengthDrawer from './drawer/LengthDrawer';
-import PencilDrawer from './drawer/PencilDrawer';
-import PolygonDrawer from './drawer/PolygonDrawer';
-import NoneDrawer from './drawer/NoneDrawer';
-import { LabelInfo } from './Marker';
+import BaseDrawer from '../drawer/BaseDrawer';
+import BoxDrawer from '../drawer/BoxDrawer';
+import AreaDrawer from '../drawer/AreaDrawer';
+import LengthDrawer from '../drawer/LengthDrawer';
+import PencilDrawer from '../drawer/PencilDrawer';
+import PolygonDrawer from '../drawer/PolygonDrawer';
+import NoneDrawer from '../drawer/NoneDrawer';
+import { LabelInfo } from '../Marker';
 
-import EllipseDrawer from './drawer/EllipseDrawer';
+import EllipseDrawer, { constrainEllipse } from '../drawer/EllipseDrawer';
 import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { Circle, CircleOutlined, Edit, EditOutlined, HighlightAlt, HighlightAltOutlined, Polyline, PolylineOutlined, Rectangle, RectangleOutlined, SquareFoot, SquareFootOutlined, Straighten, StraightenOutlined } from '@mui/icons-material';
-import BaseMark from './mark/BaseMark';
+import BaseMark, { LabelFormat } from '../mark/BaseMark';
+import Geometry from 'ol/geom/Geometry';
+import PDFObject from '../../../../lib/PDFObject';
+import { PDF_OBJECT } from '../controls/PDFPageControl';
+import { constrainGeometry } from '../../../../lib/sizeConverter';
+import { GeometryCollection, Polygon } from 'ol/geom';
+import { Style } from 'ol/style';
 
 export const TOOL_TYPE = "TOOL_TPYE";
 export const TOOL_MEMO = "TOOL_MEMO";
+export const MARK = "MARK";
 
 export const IS_DRAWER_VECTOR = "IS_DRAWER_VECTOR";
 
@@ -69,8 +76,8 @@ export interface ToolContext {
     drawerMap: Map<Tools, BaseDrawer<BaseMark>>;
     removeModify: Modify;
     snap: Snap;
-    source: Vector<Geometry>;
-    layer: VectorLayer<Vector<Geometry>>;
+    source: Vector<Feature<Geometry>>;
+    layer: VectorLayer<Feature<Geometry>>;
     translate: Translate;
     select: Select;
     toolType: Tools;
@@ -79,9 +86,9 @@ export interface ToolContext {
 const defaultLengthFormat = (line:number) => {return line + " px"};
 const defaultAreaFormat = (area:number) => {return area + " px\xB2"}
 
-function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: ToolNavigatorProps) {
+function ToolNavigator({ option = defaultOption, lengthFormat = (line:number) => {return line + " px"}, areaFormat = (area:number) => {return area + " px\xB2"}, pageLabelInfo }: ToolNavigatorProps) {
     const { map, isLoaded } = useContext(MapContext) as MapObject;
-    const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, addLabel, removeLabel, toolTypeChanged } = useContext(LabelContext) as LabelContextObject;
+    const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, labelNameList, addLabel, removeLabel } = useContext(LabelContext) as LabelContextObject;
     const context = useRef({drawerMap: new Map<Tools, BaseDrawer<BaseMark>>(), toolType: Tools.None} as ToolContext);
     const [toolType, setToolType] = useState(Tools.None);
     const [toolMode, setToolMode] = useState(Mode.Draw);
@@ -90,7 +97,7 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
         option = defaultOption;
     }
 
-    function createDrawers(source: Vector<Geometry>, select: Select) {
+    function createDrawers(layer: VectorLayer<Feature<Geometry>>, select: Select) {
         const {drawerMap} = context.current;
         drawerMap.set(Tools.None, new NoneDrawer());
 
@@ -109,46 +116,55 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
         drawerMap.set(Tools.Ellipse, new EllipseDrawer());
 
         drawerMap.forEach((value) => {
-            let draw = value.createDraw(source);
+            let draw = value.createDraw(layer);
 
             draw.on('drawend',(evt: DrawEvent) => {
-                let feature = evt.feature as Feature;
+                let feature = evt.feature;
+
                 feature.setId(uuidv4());
                 feature.set(TOOL_TYPE, context.current.toolType);
 
                 let mark = value.fromFeature(feature);
+                feature.set(MARK, mark);
                 addLabel(mark);
             });
 
-            value.createModify(select);
+            value.createModify(layer, select);
         });
     }
 
-    function getDrawer(source: Vector<Geometry>, select: Select) : BaseDrawer<BaseMark> | undefined {
+    function getDrawer(source: Vector, select: Select) : BaseDrawer<BaseMark> | undefined {
         return context.current.drawerMap.get(toolType);
     }
 
-    function createSnap(source: Vector<Geometry>): Snap {
+    function createSnap(source: Vector): Snap {
         return new Snap({ source: source });
     }
 
     const load = () => {
         if (map && isLoaded) {
+            let total = 1;
+            const pdfObject = map.get(PDF_OBJECT) as PDFObject;
+            if (pdfObject) {
+                total = pdfObject.pages.length;
+            }
+
             if (pageLabelInfo) {
                 const {drawerMap} = context.current;
-
-                initPageLabelList(-1, pageLabelInfo, (item: LabelInfo) => {
+                
+                initPageLabelList(total, pageLabelInfo, (item: LabelInfo) => {
                     let drawer = drawerMap.get(item.toolType);
                     if (drawer) {
                         let mark = drawer.createMark(item.data);
-                        mark.label = {labelName: item.label};
+                        mark.label = labelNameList.find(o => o.labelName == item.label);
                         mark.feature.setId(uuidv4());
+                        mark.feature.set(MARK, mark);
                         
                         return mark;
                     }
                 });
             } else {
-                initPageLabelList(1);
+                initPageLabelList(total);
             }
         }
     }
@@ -174,14 +190,15 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
         if (map && isLoaded) {
             const {drawerMap} = context.current;
             if (!context.current.layer) {
-
+                let extent = map.getLayers().item(0).getExtent()
                 let source = new Vector();
+                
                 let layer = new VectorLayer({
                     source: source,
+                    extent: extent,
                     style: (feature) => {
                         let type = feature.get(TOOL_TYPE);
                         let drawer = drawerMap.get(type);
-
                         return drawer.getVectorStyle(feature, type == Tools.Length ? (lengthFormat || defaultLengthFormat) : (areaFormat || defaultAreaFormat));
                     }
                 });
@@ -225,9 +242,15 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
                     if (setSelectedFeatures) {
                         setSelectedFeatures(featureList);
                     }
+
+                    if (select.getFeatures().getLength() == 1) {
+                        translate.setActive(true);
+                    } else {
+                        translate.setActive(false);
+                    }
                 });
 
-                let removeModify = new Modify({features: select.getFeatures()});
+                let removeModify = new Modify({features: select.getFeatures(), condition: never});
                 removeModify.on("change:active", function() {
                     if (context.current) {
                         const {select, source} = context.current;
@@ -240,7 +263,6 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
                         }
                     }
                 });
-                //removeModify.setActive(false);
 
                 let translate = new Translate({
                     condition: function (event) {
@@ -249,14 +271,40 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
                     features: select.getFeatures()
                 });
 
+                // Constrain during translation
+                translate.on('translating', function(event) {
+                    var features = event.features.getArray();
+                    features.forEach(function(feature) {
+                        var geometry = feature.getGeometry();
+                        if (geometry instanceof GeometryCollection) {
+                            constrainEllipse(geometry as GeometryCollection, extent);
+                        } else {
+                            constrainGeometry(geometry as Polygon, extent);
+                        }
+                    });
+                });
+        
+                // Final check after translation
+                translate.on('translateend', function(event) {
+                    var features = event.features.getArray();
+                    features.forEach(function(feature) {
+                        var geometry = feature.getGeometry();
+                        if (geometry instanceof GeometryCollection) {
+                            constrainEllipse(geometry as GeometryCollection, extent);
+                        } else {
+                            constrainGeometry(geometry as Polygon, extent);
+                        }
+                    });
+                });
+
                 map.addLayer(layer);
                 map.addInteraction(select);
 
                 translate.setActive(false);
                 let snap = createSnap(source);
                 snap.setActive(false);
-
-                createDrawers(source, select);
+                
+                createDrawers(layer, select);
 
                 map.addInteraction(removeModify);
 
@@ -343,7 +391,6 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
             map.addInteraction(newSnap);
             context.current.snap = newSnap;
             context.current.toolType = toolType;
-            toolTypeChanged(toolType);
         }
     }, [toolType]);
 
@@ -369,7 +416,6 @@ function ToolNavigator({ option, lengthFormat, areaFormat, pageLabelInfo }: Tool
                 }
 
                 select.setActive(true);
-                translate.setActive(true);
             }
         }
     }, [toolMode]);
@@ -445,11 +491,5 @@ const defaultOption: ToolOption = {
     area: true,
     ellipse: true
 }
-
-ToolNavigator.defaultProps = {
-    option: defaultOption,
-    lengthFormat: (line:number) => {return line + " px"},
-    areaFormat: (area:number) => {return area + " px\xB2"}
-};
 
 export default ToolNavigator;

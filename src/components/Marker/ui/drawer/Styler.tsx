@@ -4,7 +4,7 @@ import RenderFeature from "ol/render/Feature";
 import { getArea, getLength } from "ol/sphere";
 import { Style, Fill, Stroke, RegularShape, Text } from "ol/style";
 import CircleStyle from "ol/style/Circle";
-import { TOOL_MEMO } from "../ToolNavigator";
+import { TOOL_MEMO } from "../nevigator/ToolNavigator";
 
 export const style = new Style({
     fill: new Fill({

@@ -1,11 +1,6 @@
 import CanvasDrawer from "./CanvasDrawer";
-import * as pdfjs from 'pdfjs-dist/webpack';
 import ImageSource from "ol/source/Image";
-import { Feature, Map } from "ol";
-import VectorLayer from "ol/layer/Vector";
-import { Vector } from "ol/source";
-import { Geometry } from "ol/geom";
-import { IS_DRAWER_VECTOR } from "../components/marker/ui/ToolNavigator";
+import { Map } from "ol";
 
 class PDFObject extends CanvasDrawer {
     private readonly source: ImageSource;

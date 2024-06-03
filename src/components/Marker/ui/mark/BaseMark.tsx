@@ -1,6 +1,12 @@
 import { Feature } from "ol";
 import { LabelInformation } from "../../context";
-import { Tools } from "../ToolNavigator";
+import { Tools } from "../nevigator/ToolNavigator";
+
+export interface LabelFormat {
+    mark: BaseMark;
+    coco: number[];
+    pascal_voc?: number[];
+}
 
 class BaseMark {
     memo: string;
@@ -9,8 +15,8 @@ class BaseMark {
     label: LabelInformation;
     id: string;
 
-    refresh() {
-        
+    refresh(): LabelFormat {
+        return {} as LabelFormat;
     }
 
     static fillFromJSON<T extends BaseMark>(markType: new() => T, json: string) {

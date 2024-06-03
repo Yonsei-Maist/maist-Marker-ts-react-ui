@@ -1,57 +1,32 @@
 import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
 import { Style } from "ol/style";
-import BaseMark from "../mark/BaseMark";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
-import BasicDrawer from "./BaseDrawer";
+import { Tools, TOOL_TYPE } from "../nevigator/ToolNavigator";
 import { measureStyleFunciton } from "./Styler";
+import VectorLayer from "ol/layer/Vector";
+import { FeatureLike } from "ol/Feature";
 
-class AreaMark extends BaseMark {
-    location: Coordinate[][];
+import PolygonDrawer, { PolygonMark, clipPolygon } from "./PolygonDrawer";
 
-    refresh() {
-        let feature = this.feature;
-        if (feature) {
-            this.location = (feature.getGeometry() as Polygon).getCoordinates();
-        }
-    }
-}
-
-class AreaDrawer extends BasicDrawer<AreaMark> {
+class AreaDrawer extends PolygonDrawer {
     formatArea: (line:any) =>string
 
     setFormatArea(formatArea: (length:number) =>string) {
         this.formatArea = formatArea
     }
 
-    createMark(saveData: string, memo?: string): AreaMark {
-        let parsed = this.loadSaveData(AreaMark, saveData);
-        let geo = new Polygon(parsed.location);
-        parsed.feature = new Feature(geo);
-        parsed.feature.set(TOOL_MEMO, memo);
-        parsed.feature.set(TOOL_TYPE, Tools.Area);
-        parsed.toolType = Tools.Area;
-        return parsed;
-    }
-
-    fromFeature(feature: Feature<Geometry>): AreaMark {
-        let mark = new AreaMark();
-        mark.feature = feature;
-        mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.toolType = feature.get(TOOL_TYPE);
-
-        mark.refresh();
-
+    createMark(saveData: string, memo?: string): PolygonMark {
+        let mark = super.createMark(saveData, memo);
+        mark.feature.set(TOOL_TYPE, Tools.Area);
+        mark.toolType = Tools.Area;
         return mark;
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             type: "Polygon",
             freehand: false,
             condition: this.condition,
@@ -59,11 +34,15 @@ class AreaDrawer extends BasicDrawer<AreaMark> {
                 return measureStyleFunciton(feature, this.formatArea);
             }
         });
+        
+        this.draw.on('drawend', function(event) {
+            clipPolygon(layer.getExtent(), event.feature.getGeometry() as Polygon);
+        });
 
         return this.draw;
     }
 
-    createModify(select:Select) {
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
         this.modify = new Modify({
             condition: function (event) {
                 return primaryAction(event) && !platformModifierKeyOnly(event);
@@ -75,7 +54,7 @@ class AreaDrawer extends BasicDrawer<AreaMark> {
         return this.modify;
     }
 
-    getVectorStyle(feature?: any, customFunc?: any): Style | Style[] {
+    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
         return measureStyleFunciton(feature, customFunc);
     }
 }

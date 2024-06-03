@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, FormControlLabel, IconButton, ListItem, Menu, MenuItem, Radio, RadioGroup, SxProps, TextField, Theme } from "@mui/material";
+import { Checkbox, FormControlLabel, IconButton, ListItem, Menu, MenuItem, Radio, RadioGroup, TextField } from "@mui/material";
 import React, { ReactNode, useRef, useState } from "react";
 
 const SPLIT_TXT = "|&&|";
@@ -20,7 +20,7 @@ interface LabelMemoControlProps {
     onChangeMemo: (memo: string) => void;
 }
 
-function LabelMemoControl({icon, type, memo, memoList, splitText, onChangeMemo}: LabelMemoControlProps) {
+function LabelMemoControl({icon, type = LabelMemoType.string, memo, memoList, splitText, onChangeMemo}: LabelMemoControlProps) {
     const [open, setOpen] = useState(false);
     const ref = useRef();
     const defaultSelectItemRef = useRef();
@@ -74,7 +74,6 @@ function LabelMemoControl({icon, type, memo, memoList, splitText, onChangeMemo}:
     const onHandleCheckboxChecked = (value: string) => {
         let seperator = splitText || SPLIT_TXT;
         let memoList = memo ? memo.split(seperator) : [];
-        console.log(memoList, value, memoList.indexOf(value));
         return memoList.indexOf(value) > -1;
     }
 
@@ -130,10 +129,6 @@ function LabelMemoControl({icon, type, memo, memoList, splitText, onChangeMemo}:
             </MenuItem>
         </Menu>
     </div>
-}
-
-LabelMemoControl.defaultProps = {
-    type: LabelMemoType.string
 }
 
 export default LabelMemoControl;

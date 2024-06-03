@@ -2,8 +2,8 @@ import { GridOn, Save, StraightenTwoTone, Wallpaper } from "@mui/icons-material"
 import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Graticule } from "ol"
 import React, { ReactNode, useContext, useEffect, useRef, useState } from "react";
-import { MapContext } from "../context";
-import Confirm from "./Confirm";
+import { MapContext } from "../../context";
+import Confirm from "../dialog/Confirm";
 
 const MENU = "MENU";
 const WHITE_BACKGROUND = "WHITE_BACKGROUND";
@@ -99,8 +99,8 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
     };
 
     const onHandleShortcuts = (e: globalThis.KeyboardEvent) => {
-        e.preventDefault();
         if (e.ctrlKey && e.key.toLowerCase() == "s" || e.metaKey && e.key.toLowerCase() == "s") {
+            e.preventDefault();
             onHandleSave();
         }
     }

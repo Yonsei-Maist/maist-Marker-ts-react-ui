@@ -1,70 +1,46 @@
 import { Feature } from "ol";
-import { Coordinate } from "ol/coordinate";
-import { primaryAction, platformModifierKeyOnly, always } from "ol/events/condition";
 import { Geometry, Polygon } from "ol/geom";
-import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
-import BaseMark from "../mark/BaseMark";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../ToolNavigator";
-import BasicDrawer from "./BaseDrawer";
+import { Draw, Select } from "ol/interaction";
+import { Tools, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import VectorLayer from "ol/layer/Vector";
 
-class PencilMark extends BaseMark {
-    location: Coordinate[][];
+import PolygonDrawer, { PolygonMark } from "./PolygonDrawer";
+import { Extent } from "ol/extent";
 
-    refresh() {
-        let feature = this.feature;
-        if (feature) {
-            this.location = (feature.getGeometry() as Polygon).getCoordinates();
-        }
-    }
-}
+class PencilDrawer extends PolygonDrawer {
 
-class PencilDrawer extends BasicDrawer<PencilMark> {
-
-    createMark(saveData: string, memo?: string): PencilMark {
-        let parsed = this.loadSaveData(PencilMark, saveData);
-        let geo = new Polygon(parsed.location);
-        parsed.feature = new Feature(geo);
-        parsed.toolType = Tools.Pencil;
-        parsed.feature.set(TOOL_MEMO, memo);
-        parsed.feature.set(TOOL_TYPE, Tools.Pencil);
-
-        return parsed;
-    }
-
-    fromFeature(feature: Feature<Geometry>): PencilMark {
-        let mark = new PencilMark();
-        mark.feature = feature;
-        mark.feature.set(TOOL_TYPE, feature.get(TOOL_TYPE));
-        mark.toolType = feature.get(TOOL_TYPE);
-
-        mark.refresh();
+    createMark(saveData: string, memo?: string): PolygonMark {
+        let mark = super.createMark(saveData, memo);
+        mark.toolType = Tools.Pencil;
+        mark.feature.set(TOOL_TYPE, Tools.Pencil);
 
         return mark;
     }
 
-    createDraw(source:Vector<Geometry>) {
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
-            source: source,
+            source: layer.getSource(),
             type: "Polygon",
             condition: this.condition,
             freehand: true
+        });
+        
+        this.draw.on('drawend', function(event) {
+            clipPolygon(layer.getExtent(), event.feature.getGeometry() as Polygon);
         });
 
         return this.draw;
     }
 
-    createModify(select:Select) {
-        this.modify = new Modify({
-            condition: function (event) {
-                return primaryAction(event) && !platformModifierKeyOnly(event);
-            },
-            insertVertexCondition: always,
-            features: select.getFeatures()
-        });
+    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
+        this.modify = super.createModify(layer, select);
         this.modify.setActive(false);
         return this.modify;
     }
 }
 
 export default PencilDrawer;
+
+function clipPolygon(arg0: Extent, arg1: Polygon) {
+    throw new Error("Function not implemented.");
+}
