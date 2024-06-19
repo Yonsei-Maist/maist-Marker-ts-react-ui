@@ -6,23 +6,24 @@
 import React, { ReactNode, Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import MapProvider, { MapProviderState } from '../provider/MarkerProvider';
 import MarkComponent from './MarkComponent';
-import ToolNavigator, { ToolOption, Tools, TOOL_TYPE } from './nevigator/ToolNavigator';
+import ToolNavigator, { TOOL_TYPE } from './nevigator/ToolNavigator';
 import LabelNavigator from './nevigator/LabelNavigator';
 import { Box, Button, IconButton, Snackbar, styled } from '@mui/material';
 import { ArrowCircleLeft, Close } from '@mui/icons-material';
 import PaletteNavigator from './nevigator/PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
-import BaseMark, { LabelFormat } from './mark/BaseMark';
+import BaseMark from './mark/BaseMark';
 import Confirm from './dialog/Confirm';
 import { AxiosInstance } from 'axios';
 
 import 'ol/ol.css';
-import { HeaderString } from '../../../lib/dicomReader';
+import { HeaderString } from '../../../api/dicomReader';
 import PDFPageControl from './controls/PDFPageControl';
-import { isPDF } from '../../../lib/PDFObject';
+import { isPDF } from '../../../api/pdfReader';
 import { allocateColor } from '../../../lib/colorAllocator';
 import { LabelMemoType } from './controls/LabelMemoControl';
 import { LabelInformation } from '../context';
+import {PresetBox, PresetEllipse, PresetPolygon} from './addon/Presets';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -48,7 +49,7 @@ const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !==
 
 export interface LabelInfo {
     data: string;
-    toolType: Tools;
+    toolType: string;
     label: string;
 }
 
@@ -58,17 +59,16 @@ export interface MarkerState {
 }
 
 export interface MarkerProps {
-    dziUrl: string;
+    fileUri?: string;
+    fileBlob?: Blob;
     saveHandler?: (labelList: LabelInfo[][], memo?: string, callback?: () => void) => void;
     axiosInstance?: AxiosInstance;
     options?: MarkerOptions;
-    lengthFormat?: (length: number) => string;
-    areaFormat?: (area: number) => string;
+    children?: ReactNode;
 };
 
 export interface MarkerOptions {
     readOnly?: boolean;
-    toolTypes?: Tools[];
     savedLabelInfo?: LabelInfo[][];
     savedMemo?: string;
     labelNameList?: LabelInformation[] | string[];
@@ -86,10 +86,9 @@ const defaultOptions: MarkerOptions = {
     labelNameList: []
 }
 
-function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInstance, options = defaultOptions }: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ fileUri, fileBlob, saveHandler, children = [<PresetBox/>, <PresetPolygon/>, <PresetEllipse/>], axiosInstance, options = defaultOptions }: MarkerProps, ref: Ref<MarkerState>) {
     const combinedOption = {...defaultOptions, ...options}
     const providerState = useRef(null as MapProviderState | null);
-    const [option, setOption] = useState(undefined as ToolOption | undefined);
     const [open, setOpen] = useState(true);
     const boxRef = useRef();
     const [localLabelInfo, setLocalLabelInfo] = useState(combinedOption.savedLabelInfo);
@@ -101,8 +100,8 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
 
     const [saveNotificationOpen, setSaveNotificationOpen] = useState(false);
 
-    const storage_key = LOCAL_STORAGE_KEY + dziUrl;
-    const storage_memo_key = LOCAL_STORAGE_KEY + dziUrl + "memo";
+    const storage_key = LOCAL_STORAGE_KEY + fileUri;
+    const storage_memo_key = LOCAL_STORAGE_KEY + fileUri + "memo";
 
     const getLabel = (toObject: boolean) => {
         let labelList = [];
@@ -127,7 +126,7 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
             }
 
         }
-        console.log(labelList);
+
         return labelList;
     }
 
@@ -220,36 +219,8 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
             setLocalCheck(false);
         }
     }, []);
-
+    
     useEffect(() => {
-        if (combinedOption.toolTypes) {
-            let typeOption = {} as ToolOption;
-            for (let i = 0; i < combinedOption.toolTypes.length; i++) {
-                let type = combinedOption.toolTypes[i];
-                switch (type) {
-                    case Tools.Area:
-                        typeOption.area = true;
-                        break;
-                    case Tools.Box:
-                        typeOption.box = true;
-                        break;
-                    case Tools.Length:
-                        typeOption.length = true;
-                        break;
-                    case Tools.Pencil:
-                        typeOption.pencil = true;
-                        break;
-                    case Tools.Polygon:
-                        typeOption.polygon = true;
-                        break;
-                    case Tools.Ellipse:
-                        typeOption.ellipse = true;
-                        break;
-                }
-            }
-
-            setOption(typeOption);
-        }
         if (combinedOption.labelNameList && combinedOption.labelNameList.length > 0) {
             let item = combinedOption.labelNameList[0];
             if (typeof item === 'string') {
@@ -292,15 +263,17 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
             <MapProvider 
                 load={localCheck} 
                 ref={providerState} 
-                dziUrl={dziUrl} 
+                fileUri={fileUri} 
+                fileBlob={fileBlob}
                 axiosInstance={axiosInstance} 
                 labelNameList={globalLabelNameList} 
                 header={combinedOption.dcmConnectHeader} 
                 withCredentials={combinedOption.dcmWithCredentials} 
                 memo={memo}
             >
+                {children}
                 {
-                    isPDF(dziUrl) &&
+                    isPDF(fileUri) &&
                     <PDFPageControl />
                 }
                 <Box ref={boxRef} height={"100%"} position={"relative"}>
@@ -313,7 +286,7 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
                     </PaletteNavigator>
                     {
                         !combinedOption.readOnly &&
-                        <ToolNavigator option={option} lengthFormat={lengthFormat} areaFormat={areaFormat} pageLabelInfo={localLabelInfo}/>
+                        <ToolNavigator pageLabelInfo={localLabelInfo}/>
                     }
                     <LabelNavigator open={open} labelMemoType={combinedOption.labelMemoType} labelMemoOptions={combinedOption.labelMemoOptions} onOpenChange={() => {
                         setOpen(false);
@@ -339,10 +312,5 @@ function Marker({ dziUrl = "", lengthFormat, areaFormat, saveHandler, axiosInsta
 }
 
 const RefMarker = React.forwardRef<MarkerState, MarkerProps>(Marker);
-
-export {
-    Tools,
-    ToolOption
-}
 
 export default RefMarker;

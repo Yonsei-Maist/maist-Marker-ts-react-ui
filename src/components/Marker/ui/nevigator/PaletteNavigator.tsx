@@ -1,9 +1,9 @@
 import { GridOn, Save, StraightenTwoTone, Wallpaper } from "@mui/icons-material";
 import { Box, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { Graticule } from "ol"
-import React, { ReactNode, useContext, useEffect, useRef, useState } from "react";
-import { MapContext } from "../../context";
+import React, { ReactNode, useEffect, useRef, useState } from "react";
 import Confirm from "../dialog/Confirm";
+import { useMap } from "../../provider/MarkerProvider";
 
 const MENU = "MENU";
 const WHITE_BACKGROUND = "WHITE_BACKGROUND";
@@ -18,7 +18,7 @@ export interface PaletteNavigatorProps {
 }
 
 function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNavigatorProps) {
-    const {map, isLoaded} = useContext(MapContext);
+    const {map, isLoaded} = useMap();
     const [gridLayer, setGridLayer] = useState(undefined as undefined | Graticule);
     const [selectedList, setSelectedList] = useState([]);
     const [openConfirm, setOpenConfirm] = useState(false);

@@ -3,14 +3,13 @@ import { Geometry, MultiPoint, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Style, Fill, Stroke, Circle } from "ol/style";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
-import { MARK, ToolContext, Tools } from "../nevigator/ToolNavigator";
+import { MARK, ToolContext } from "../nevigator/ToolNavigator";
 import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";
-import { Coordinate } from "ol/coordinate";
 
 import { Map} from "ol"
 import { MAP_HEIGHT, MAP_WIDTH } from "../../../../api/SourceReader";
-import { fitPoint, fitPoints } from "../../../../lib/sizeConverter";
+import { fitPoints } from "../../../../lib/sizeConverter";
 
 class BasicDrawer<T extends BaseMark> {
     draw:Draw;
@@ -38,7 +37,7 @@ class BasicDrawer<T extends BaseMark> {
         return BaseMark.fillFromJSON<T>(type, saveData);
     }
 
-    createMark(saveData: string, memo?: string) {
+    createMark(saveData: string, toolType: string, memo?: string) {
         return {} as T;
     }
 
@@ -97,13 +96,13 @@ class BasicDrawer<T extends BaseMark> {
             if (value == this) {
                 value.getModify().setActive(true);
             } else {
-                if (key != Tools.None)
+                if (key != "")
                     value.getModify().setActive(false);
             }
         });
     }
 
-    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
+    getVectorStyle(feature?: FeatureLike): Style | Style[] {
         let defaultColor = '#ff3333';
         if (feature) {
 

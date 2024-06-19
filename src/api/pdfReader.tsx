@@ -1,8 +1,14 @@
-import CanvasDrawer from "./CanvasDrawer";
+import CanvasDrawer from "../lib/CanvasDrawer";
 import ImageSource from "ol/source/Image";
 import { Map } from "ol";
+import * as pdfjs from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.mjs';
 
-class PDFObject extends CanvasDrawer {
+pdfjs.GlobalWorkerOptions.workerSrc = URL.createObjectURL(
+    new Blob([`importScripts('${pdfjsWorker});`], { type: 'application/javascript' })
+);
+
+export class PDFObject extends CanvasDrawer {
     private readonly source: ImageSource;
     private readonly map: Map;
     private currentPageNo: number;
@@ -11,7 +17,7 @@ class PDFObject extends CanvasDrawer {
     public readonly pages: any;
 
     constructor(pdf: any, pages: any, map: Map, source: ImageSource) {
-        const viewport = pages[0].getViewport({scale: 1,});
+        const viewport = pages[0].getViewport({ scale: 1, });
         super(viewport.width, viewport.height);
 
         this.pdf = pdf;
@@ -23,7 +29,7 @@ class PDFObject extends CanvasDrawer {
 
     drawing(): void {
         const page = this.pages[this.currentPageNo - 1];
-        
+
         var viewport = page.getViewport({ scale: 1, });
         // Support HiDPI-screens.
         var outputScale = window.devicePixelRatio || 1;
@@ -35,7 +41,7 @@ class PDFObject extends CanvasDrawer {
         this.memoryCanvas.width = Math.floor(viewport.width * outputScale);
         this.memoryCanvas.height = Math.floor(viewport.height * outputScale);
         this.memoryCanvas.style.width = Math.floor(viewport.width) + "px";
-        this.memoryCanvas.style.height =  Math.floor(viewport.height) + "px";
+        this.memoryCanvas.style.height = Math.floor(viewport.height) + "px";
 
         var renderContext = {
             canvasContext: this.context,
@@ -44,7 +50,7 @@ class PDFObject extends CanvasDrawer {
         };
 
         let renderTask = page.render(renderContext);
-        renderTask.promise.then(() => {this.source.changed()});
+        renderTask.promise.then(() => { this.source.changed() });
     }
 
     setCurrentPageNo(page: number) {
@@ -56,4 +62,9 @@ export function isPDF(url: string) {
     return url.indexOf(".pdf") > -1
 }
 
-export default PDFObject;
+async function pdfReader(fileBuffer: ArrayBuffer) {
+    let task = pdfjs.getDocument(await fileBuffer);
+    return await task.promise;
+}
+
+export default pdfReader;

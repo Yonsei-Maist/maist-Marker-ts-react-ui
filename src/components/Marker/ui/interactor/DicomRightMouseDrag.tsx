@@ -3,7 +3,7 @@ import { Coordinate } from "ol/coordinate";
 import PointerInteraction from "ol/interaction/Pointer";
 import ImageSource from "ol/source/Image";
 import Static from "ol/source/ImageStatic";
-import { DicomObject } from "../../../../lib/dicomReader";
+import { DicomObject } from "../../../../api/dicomReader";
 
 export const DICOM_OBJECT = "DICOM_OBJECT";
 

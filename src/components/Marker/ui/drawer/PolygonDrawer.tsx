@@ -4,7 +4,7 @@ import { primaryAction, platformModifierKeyOnly, always, never } from "ol/events
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import { TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
 import BaseDrawer from "./BaseDrawer";
 import VectorLayer from "ol/layer/Vector";
 
@@ -103,13 +103,13 @@ export class PolygonMark extends BaseMark {
 
 class PolygonDrawer extends BaseDrawer<PolygonMark> {
 
-    createMark(saveData: string, memo?: string): PolygonMark {
+    createMark(saveData: string, toolType: string, memo?: string): PolygonMark {
         let mark = this.loadSaveData(PolygonMark, saveData);
         let geo = new Polygon(mark.location);
         mark.feature = new Feature(geo);
-        mark.toolType = Tools.Polygon;
+        mark.toolType = toolType;
         mark.feature.set(TOOL_MEMO, memo);
-        mark.feature.set(TOOL_TYPE, Tools.Polygon);
+        mark.feature.set(TOOL_TYPE, toolType);
 
         return mark;
     }
@@ -123,15 +123,6 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
         mark.refresh();
 
         return mark;
-    }
-
-    createFeature(location: any[], memo?: string) {
-        let geo = new Polygon(location);
-        let feature = new Feature(geo);
-
-        feature.set(TOOL_TYPE, Tools.Polygon);
-
-        return feature;
     }
 
     createDraw(layer:VectorLayer<Feature<Geometry>>) {

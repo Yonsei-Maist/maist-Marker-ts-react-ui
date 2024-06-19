@@ -1,8 +1,9 @@
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, Menu, TextField, Typography } from "@mui/material";
-import React, { useContext, useRef, useState } from "react";
-import { LabelContext, LabelInformation } from "../../context";
+import React, { useRef, useState } from "react";
+import { LabelInformation } from "../../context";
 import { Create, Delete } from "@mui/icons-material";
 import { SketchPicker } from 'react-color';
+import { useLabel } from "../../provider/LabelProvider";
 
 function ColorBox({ref, color, onClick}) {
     return <Box
@@ -59,7 +60,7 @@ interface LabelNameManagerProps {
 }
 
 function LabelNameManager({ open, onHandleClose }: LabelNameManagerProps) {
-    const { currentPageNo, pageLabelList, labelNameList, setLabelNameList } = useContext(LabelContext);
+    const { currentPageNo, pageLabelList, labelNameList, setLabelNameList } = useLabel();
 
     const anchorEl = useRef<null | HTMLElement>(null);
     const [colorOpen, setColorOpen] = useState(false);

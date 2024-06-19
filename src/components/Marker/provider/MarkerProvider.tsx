@@ -1,12 +1,12 @@
 import { Feature, Graticule, Map as olMap } from 'ol';
-import {defaults as defaultInteraction} from 'ol/interaction';
-import React, { forwardRef, Ref, useEffect, useImperativeHandle, useState } from 'react';
+import { defaults as defaultInteraction } from 'ol/interaction';
+import React, { forwardRef, Ref, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import dziReader, { makeLayer } from "../../../api/SourceReader";
 
 import { defaults } from 'ol/control';
 
-import MapContext, { MapObject, MAP_MEMO } from '../context/MapContext';
-import {LabelContext, LabelContextObject, LabelInformation } from '../context';
+import MapContext, { MAP_MEMO } from '../context/MapContext';
+import { LabelInformation } from '../context';
 import { Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import { Geometry } from 'ol/geom';
@@ -14,9 +14,10 @@ import { Stroke } from 'ol/style';
 import BaseMark from '../ui/mark/BaseMark';
 import { AxiosInstance } from 'axios';
 import { Alert, CircularProgress } from '@mui/material';
-import { HeaderString } from '../../../lib/dicomReader';
-import { LabelInfo } from '../ui/Marker';
-import {Map as OlMap} from 'ol';
+import { HeaderString } from '../../../api/dicomReader';
+import { Map as OlMap } from 'ol';
+import LabelProvider, { LabelProviderState } from './LabelProvider';
+import AddonProvider from './AddonProvider';
 
 export interface MapProviderState {
     pageLabelList: BaseMark[][];
@@ -26,7 +27,8 @@ export interface MapProviderState {
 }
 
 type MapProviderProps = {
-    dziUrl: string;
+    fileUri: string;
+    fileBlob?: Blob;
     children?: React.ReactNode;
     axiosInstance?: AxiosInstance;
     labelNameList: LabelInformation[];
@@ -36,13 +38,15 @@ type MapProviderProps = {
     load: boolean;
 };
 
-function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref:Ref<MapProviderState>) {
-    const [mapObj, setMapObj] = useState({isLoaded: false} as MapObject);
-    const [labelContext, setLabelContext] = useState({pageLabelList: new Map<number, BaseMark[]>(), currentPageNo: 1, labelNameList: labelNameList} as LabelContextObject);
-    const [{ loading, data, error }, refetch] = dziReader(dziUrl, [], axiosInstance, header, withCredentials);
+function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref: Ref<MapProviderState>) {
+    const labelRef = useRef<LabelProviderState>();
+
+    const [map, setMap] = useState<OlMap>();
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    const [{ loading, data, error, errorMessage }, refetch] = dziReader(fileUri, fileBlob, [fileUri, fileBlob], axiosInstance, header, withCredentials);
 
     function getMemo() {
-        const {map} = mapObj;
         if (map) {
             return map.get(MAP_MEMO);
         }
@@ -51,104 +55,24 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
     }
 
     useImperativeHandle(ref, () => {
-        let pageLabelList = [];
-        for (let i=0;i<labelContext.pageLabelList.size;i++) {
-            let labelList = labelContext.pageLabelList.get(i + 1);
+        if (labelRef.current) {
+            let localPageLabelList: BaseMark[][] = [];
+            for (let i = 0; i < labelRef.current.pageLabelList.size; i++) {
+                let labelList = labelRef.current.pageLabelList.get(i + 1);
 
-            pageLabelList.push(labelList);
+                localPageLabelList.push(labelList);
+            }
+
+            return {
+                pageLabelList: localPageLabelList,
+                getMemo: getMemo,
+                labelNameList: labelNameList,
+                map: map
+            } as MapProviderState;
         }
-
-        const {map} = mapObj;
-        return {
-            pageLabelList: pageLabelList,
-            getMemo: getMemo,
-            labelNameList: labelContext.labelNameList,
-            map: map
-        } as MapProviderState;
     });
 
-    function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
-        
-        let pageLabelList = labelContext.pageLabelList
-        if (pageLabelList.size != pages && !pageLabelInfo) {
-            pageLabelList.clear();
-
-            for (let i =0;i< pages;i++) {
-                pageLabelList.set(i + 1, [] as BaseMark[]);
-            }
-        }
-
-        if (pageLabelInfo && converter) {
-            if (pageLabelInfo.length != pages) {
-                throw Error("Saved label list and number of pages must be same: " + pageLabelInfo.length + ", " + pages + " or do not set this.");
-            }
-
-            pageLabelList.clear();
-
-            for (let i =0 ;i<pageLabelInfo.length;i++) {
-                let labelInfo = pageLabelInfo[i];
-                let markList = [] as BaseMark[];
-                for (let j =0;j<labelInfo.length;j++) {
-                    markList.push(converter(labelInfo[j]));
-                }
-
-                pageLabelList.set(i + 1, markList);
-            }
-        }
-
-        labelContext.pageLabelList = new Map(pageLabelList);
-        refresh();
-    }
-
-    function setCurrentPageNo(page: number) {
-        labelContext.currentPageNo = page;
-        refresh();
-    }
-
-    function refresh() {
-        let newObj = {...labelContext, setSelectedFeatures, addLabel, removeLabel, refresh, setCurrentPageNo, initPageLabelList, setLabelNameList, setSelectedLabel};
-        
-        setLabelContext(() => ({...newObj}));
-    }
-
-    function setSelectedFeatures(features?: Feature[]) {
-        labelContext.selectedFeatures = features ? [...features] : features;
-        refresh();    
-    }
-
-    function addLabel(mark: BaseMark) {
-        labelContext.pageLabelList.get(labelContext.currentPageNo).push(mark);
-        refresh();    
-    }
-
-    function removeLabel(feature: Feature) {
-        let removeIdx = -1;
-        let labelList = labelContext.pageLabelList.get(labelContext.currentPageNo);
-        for (let i = 0;i<labelList.length;i++) {
-            let originListId = labelList[i].feature.getId();
-            let candidateRemovingId = feature.getId();
-            if (originListId == candidateRemovingId)
-                removeIdx = i;
-        }
-
-        if (removeIdx > -1) {
-            labelList.splice(removeIdx, 1);
-            labelContext.selectedFeatures = undefined;
-            refresh();    
-        }
-    }
-
-    function setMap(obj?: any) {
-        let newObj = {...mapObj, select, remove, unselect, clearSelection, redrawFeatures};
-        if (obj) {
-            newObj = {...newObj, ...obj};
-        }
-
-        setMapObj(() =>({...newObj}));
-    }
-
     function clearSelection() {
-        const {map} = mapObj;
         if (map) {
             let interactions = map.getInteractions();
             for (let i in interactions.getArray()) {
@@ -161,12 +85,9 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 }
             }
         }
-
-        setMap();
     }
 
     function unselect(mark: BaseMark) {
-        const {map} = mapObj;
         if (map) {
             let interactions = map.getInteractions();
             for (let i in interactions.getArray()) {
@@ -179,12 +100,9 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 }
             }
         }
-
-        setMap();
     }
 
     function select(mark: BaseMark) {
-        const {map} = mapObj;
         if (map) {
             let interactions = map.getInteractions();
             for (let i in interactions.getArray()) {
@@ -197,12 +115,9 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 }
             }
         }
-
-        setMap();
     }
 
     function remove(marker: BaseMark) {
-        const {map} = mapObj;
         if (map) {
             let layers = map.getLayers();
             for (let i in layers.getArray()) {
@@ -215,23 +130,10 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
                 }
             }
         }
-
-        setMap();
-    }
-
-    function setLabelNameList(labelNameList: LabelInformation[]) {
-        labelContext.labelNameList = labelNameList;
-        refresh();
-    }
-
-    function setSelectedLabel(label: LabelInformation) {
-        labelContext.selectedLabel = label;
-        refresh();
     }
 
     function redrawFeatures() {
 
-        const {map} = mapObj;
         if (map) {
             const layers = map.getLayers().getArray();
             for (let layer of layers) {
@@ -245,25 +147,23 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
 
     useEffect(() => {
         if (!load) {
-            var interactions = defaultInteraction({altShiftDragRotate:false, pinchRotate:false}); 
+            var interactions = defaultInteraction({ altShiftDragRotate: false, pinchRotate: false });
             const map = new olMap({
                 interactions,
-                controls: defaults({ zoom: false, rotate: false}).extend([]),
+                controls: defaults({ zoom: false, rotate: false }).extend([]),
                 target: 'map'
             });
 
             map.set(MAP_MEMO, memo);
-            setMap({map});
-            refresh();
+            setMap(map);
             refetch();
             return () => map.setTarget(undefined);
         }
     }, [load]);
 
     useEffect(() => {
-        if (data) {
-            let map = mapObj.map;
-            let sourceData = makeLayer(map, dziUrl, data, axiosInstance);
+        if (data && map) {
+            let sourceData = makeLayer(map, fileUri, data, axiosInstance);
 
             let graticuleLayer = new Graticule({
                 // the style to use for the lines, optional.
@@ -277,50 +177,63 @@ function MapProvider({ dziUrl, children, axiosInstance, labelNameList, header, w
             });
 
             graticuleLayer.setVisible(false);
-            map?.addLayer(sourceData.layer);
-            map?.addLayer(graticuleLayer);
-            map?.setView(sourceData.view);
+            map.addLayer(sourceData.layer);
+            map.addLayer(graticuleLayer);
+            map.setView(sourceData.view);
             map.getViewport().addEventListener('contextmenu', function (evt) {
                 evt.preventDefault();
             });
-            
-            setMap({isLoaded: true});
+
+            setIsLoaded(true);
         }
     }, [data]);
 
     useEffect(() => {
-        const {map} = mapObj;
         if (map) {
             map.set(MAP_MEMO, memo);
         }
     }, [memo]);
 
     useEffect(() => {
-        if (labelNameList.length > 0) {
-            labelContext.selectedLabel = labelNameList[0];
+        if (fileBlob || fileUri) {
+            if (map) {
+                map.getLayers().clear();
+                setIsLoaded(false);
+                refetch();
+            }
         }
-        setLabelNameList(labelNameList);
-    }, [labelNameList]);
+    }, [fileBlob, fileUri]);
 
     return (
-        <MapContext.Provider value={mapObj}>
-            <LabelContext.Provider value={labelContext}>
-                {
-                    !loading &&
-                    !load &&
-                    error &&
-                    <Alert severity='error'>{"Error !"}</Alert>
-                }
-                {
-                    children
-                }
-                {
-                    (loading || load) &&
-                    <CircularProgress size={20} sx={{position: "absolute", top: "50%", left: "50%", transform:"translate(-50%, -50%)"}}/>
-                }
-            </LabelContext.Provider>
+        <MapContext.Provider value={{ map, isLoaded, select, remove, unselect, clearSelection, redrawFeatures }}>
+            <AddonProvider>
+                <LabelProvider ref={labelRef} labelNameList={labelNameList}>
+                    {
+                        !loading &&
+                        !load &&
+                        error &&
+                        <Alert severity='error'>{"Error !" + errorMessage}</Alert>
+                    }
+                    {
+                        children
+                    }
+                    {
+                        (loading || load) &&
+                        <CircularProgress size={20} sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }} />
+                    }
+                </LabelProvider>
+            </AddonProvider>
         </MapContext.Provider>
     );
+}
+
+export const useMap = () => {
+    const context = useContext(MapContext);
+    if (!context) {
+        throw new Error('useAddon must be used within an AddonProvider');
+    }
+
+    return context;
 }
 
 const RefMapProvider = forwardRef(MapProvider);

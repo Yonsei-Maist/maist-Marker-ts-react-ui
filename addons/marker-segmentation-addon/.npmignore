@@ -10,4 +10,3 @@ config-overrides.js
 tsconfig.json
 storybook-static
 @types
-addons/

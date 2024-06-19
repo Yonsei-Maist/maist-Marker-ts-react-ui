@@ -31,7 +31,6 @@
         "./src/index.tsx"
     ],
     "exclude": [
-        "node_modules",
-        "./src/**/*.stories.tsx"
+        "./node_modules"
     ]
 }

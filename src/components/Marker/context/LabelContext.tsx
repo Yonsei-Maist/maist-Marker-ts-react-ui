@@ -1,7 +1,7 @@
 import React from 'react';
 import { Feature } from 'ol';
 import BaseMark from '../ui/mark/BaseMark';
-import { LabelInfo, Tools } from '../ui';
+import { LabelInfo } from '../ui';
 
 export interface LabelInformation {
     labelName: string;
@@ -21,8 +21,6 @@ export interface LabelContextObject {
     setSelectedFeatures?: (feature?: Feature[]) => void;
     addLabel: (feature: BaseMark, labelName?:string) => void;
     removeLabel: (feature: Feature) => void;
-    refresh: () => void;
-    getLabelNameList: (toolType: Tools) => string[];
 }
 
 const LabelContext = React.createContext({} as LabelContextObject);

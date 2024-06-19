@@ -3,7 +3,7 @@ import { Coordinate } from "ol/coordinate";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { Geometry, Circle, Polygon, Point, GeometryCollection, LineString, MultiPoint } from "ol/geom";
 import { Draw, Select, Modify } from "ol/interaction";
-import { TOOL_TYPE, Tools, TOOL_MEMO } from "../nevigator/ToolNavigator";
+import { TOOL_TYPE, TOOL_MEMO } from "../nevigator/ToolNavigator";
 import BasicDrawer from "./BaseDrawer";
 import { fromCircle } from 'ol/geom/Polygon'
 import { getCenter } from "ol/extent";
@@ -108,7 +108,7 @@ class EllipseMark extends BaseMark {
 }
 
 class EllipseDrawer extends BasicDrawer<EllipseMark> {
-    createMark(saveData: string, memo?: string): EllipseMark {
+    createMark(saveData: string, toolType: string, memo?: string): EllipseMark {
         let mark = this.loadSaveData(EllipseMark, saveData);
         let first = mark.first;
         let last = mark.last;
@@ -123,9 +123,9 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         geo.set("thumbFunc", thumbFunc(geo.getGeometries()), true);
 
         mark.feature = new Feature(geo);
-        mark.toolType = Tools.Ellipse;
+        mark.toolType = toolType;
         mark.feature.set(TOOL_MEMO, memo);
-        mark.feature.set(TOOL_TYPE, Tools.Ellipse);
+        mark.feature.set(TOOL_TYPE, toolType);
 
         return mark;
     }
@@ -258,7 +258,7 @@ class EllipseDrawer extends BasicDrawer<EllipseMark> {
         return this.modify;
     }
     
-    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
+    getVectorStyle(feature?: FeatureLike): Style | Style[] {
         const style = super.getVectorStyle(feature) as Style;
         const collection = feature.getGeometry() as GeometryCollection;
         const first = (collection.getGeometries()[0] as Point).getCoordinates();

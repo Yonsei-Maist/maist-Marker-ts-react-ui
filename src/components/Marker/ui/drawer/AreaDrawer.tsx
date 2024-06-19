@@ -3,7 +3,7 @@ import { primaryAction, platformModifierKeyOnly, never } from "ol/events/conditi
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Style } from "ol/style";
-import { Tools, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import { TOOL_TYPE } from "../nevigator/ToolNavigator";
 import { measureStyleFunciton } from "./Styler";
 import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";
@@ -13,14 +13,19 @@ import PolygonDrawer, { PolygonMark, clipPolygon } from "./PolygonDrawer";
 class AreaDrawer extends PolygonDrawer {
     formatArea: (line:any) =>string
 
+    constructor(formatArea: (line:any) =>string) {
+        super();
+        this.formatArea = formatArea;
+    }
+
     setFormatArea(formatArea: (length:number) =>string) {
         this.formatArea = formatArea
     }
 
-    createMark(saveData: string, memo?: string): PolygonMark {
+    createMark(saveData: string, toolType: string, memo?: string): PolygonMark {
         let mark = super.createMark(saveData, memo);
-        mark.feature.set(TOOL_TYPE, Tools.Area);
-        mark.toolType = Tools.Area;
+        mark.feature.set(TOOL_TYPE, toolType);
+        mark.toolType = toolType;
         return mark;
     }
 
@@ -54,8 +59,8 @@ class AreaDrawer extends PolygonDrawer {
         return this.modify;
     }
 
-    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
-        return measureStyleFunciton(feature, customFunc);
+    getVectorStyle(feature?: FeatureLike): Style | Style[] {
+        return measureStyleFunciton(feature, this.formatArea);
     }
 }
 

@@ -7,7 +7,7 @@ import { Zoomify } from "ol/source";
 import Static from "ol/source/ImageStatic";
 import useAsync, { ReducerState } from "../hooks/useAsync";
 import { ResponseMessage, ResultData } from "../models/response";
-import dicomReader, { DicomObject, HeaderString, isDicom } from "../lib/dicomReader";
+import dicomReader, { DicomObject, HeaderString, isDicom } from "./dicomReader";
 import { fitSize } from "../lib/sizeConverter";
 import DicomRightMouseDrag, { DICOM_OBJECT } from "../components/marker/ui/interactor/DicomRightMouseDrag";
 
@@ -15,9 +15,8 @@ import sizeOf from 'buffer-image-size';
 import ImageCanvasSource from "ol/source/ImageCanvas";
 import { MAP_MEMO } from "../components/marker/context/MapContext";
 
-import * as pdfjs from 'pdfjs-dist/webpack.mjs';
-import PDFPageControl, { PDF_CURRENT_PAGE_NO, PDF_OBJECT } from "../components/marker/ui/controls/PDFPageControl";
-import PDFObject, { isPDF } from "../lib/PDFObject";
+import { PDF_CURRENT_PAGE_NO, PDF_OBJECT } from "../components/marker/ui/controls/PDFPageControl";
+import pdfReader, { PDFObject, isPDF } from "./pdfReader";
 import { Buffer } from 'buffer';
 
 export const MAP_WIDTH = "MAP_WIDTH";
@@ -91,14 +90,24 @@ function parseDzi(map: Map, path: string, data: any, axiosInstance?: AxiosInstan
     return { layer, view };
 }
 
-function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
+function parseImage(data: any) {
     window.Buffer = Buffer;
-    const imageInfo = sizeOf(Buffer.from(data));
+    const imageBuffer = Buffer.from(data);
+    const imageInfo = sizeOf(imageBuffer);
 
+    let binary = '';
+    let bytes = new Uint8Array(imageBuffer);
+    let len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+
+    let base64 = window.btoa(binary);
+    let imageSrc = 'data:image/png;base64,' + base64;
     let newSize = fitSize(imageInfo.width, imageInfo.height);
 
     let source = new Static({
-        url: path,
+        url: imageSrc,
         imageExtent: [0, -newSize[1], newSize[0], 0]
         // imageExtent: [0, 0, newSize[0], newSize[1]]
     });
@@ -119,7 +128,7 @@ function parseImage(path: string, data: any, axiosInstance?: AxiosInstance) {
     return { layer, view }
 }
 
-function parseDicom(map: Map, path: string, data: any, axiosInstance?: AxiosInstance) {
+function parseDicom(map: Map, data: any, axiosInstance?: AxiosInstance) {
     let dicomData = new DicomObject(data);
 
     map.set(DICOM_OBJECT, dicomData);
@@ -190,7 +199,7 @@ function parseDicom(map: Map, path: string, data: any, axiosInstance?: AxiosInst
     return { layer, view }
 }
 
-function parsePDf(map: Map, path: string, data: any, axiosInstance?: AxiosInstance) {
+function parsePDf(map: Map, data: any, axiosInstance?: AxiosInstance) {
     const pages = data.pages;
     const page = pages[0];
 
@@ -257,11 +266,11 @@ export function makeLayer(map: Map, path: string, data: any, axiosInstance?: Axi
     if (path.indexOf(".dzi") > -1) {
         parsed = parseDzi(map, path, data, axiosInstance);
     } else if (isDicom(path)) {
-        parsed = parseDicom(map, path, data, axiosInstance);
+        parsed = parseDicom(map, data);
     } else if (isPDF(path)) {
-        parsed = parsePDf(map, path, data, axiosInstance);
+        parsed = parsePDf(map, data);
     } else {
-        parsed = parseImage(path, data, axiosInstance);
+        parsed = parseImage(data);
     }
 
     let extent = parsed.layer.getExtent();
@@ -271,30 +280,43 @@ export function makeLayer(map: Map, path: string, data: any, axiosInstance?: Axi
     return parsed;
 }
 
-function ReadFile(url: string, dev: React.DependencyList, axiosInstance?: AxiosInstance, header?: HeaderString[], withCredentials = true): [ReducerState, () => Promise<void>] {
+function ReadFile(url: string, fileBlob?: Blob, dev: React.DependencyList = [], axiosInstance?: AxiosInstance, header?: HeaderString[], withCredentials = true): [ReducerState, () => Promise<void>] {
+    async function getFileFromUrl() {
+        let buffer: ArrayBuffer;
+        if (!fileBlob) {
+            const response = await (axiosInstance || axios.create()).get(
+                url, { responseType: "arraybuffer" }
+            );
+
+            buffer = response.data;
+        } else {
+            buffer = await fileBlob.arrayBuffer();
+        }
+        return buffer;
+    }
+    
     async function getFile() {
-        const response = await (axiosInstance || axios.create()).get(
-            url, { responseType: "arraybuffer" }
-        );
+        const buffer = await getFileFromUrl();
 
         return {
-            result: response.status == 200 ? "success" : "fail",
-            data: response.data as ResultData
+            result: buffer ? "success" : "fail",
+            data: buffer as ResultData
         } as ResponseMessage;
     }
 
     async function getDicom() {
-        const image = await dicomReader(url, header, withCredentials);
+        const buffer = await getFileFromUrl();
+        const image = await dicomReader(buffer);
 
         return {
             result: image ? "success" : "fail",
-            data: image
+            data: image as ResultData
         }
     }
 
     async function getPDF() {
-        let task = pdfjs.getDocument(url);
-        const pdf = await task.promise;
+        const buffer = await getFileFromUrl();
+        const pdf = await pdfReader(buffer);
 
         const numPages = pdf.numPages;
         let pageIter = [];

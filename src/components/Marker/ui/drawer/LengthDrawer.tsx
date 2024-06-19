@@ -4,7 +4,7 @@ import { Draw, Modify, Select } from "ol/interaction";
 import { Feature } from "ol";
 import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
 import { measureStyleFunciton } from "./Styler";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import { TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
 import { Style } from "ol/style";
 import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";
@@ -37,15 +37,20 @@ class LengthMark extends BaseMark {
 }
 
 class LengthDrawer extends BaseDrawer<LengthMark> {
+    constructor(formatLength: (line: number) => string) {
+        super();
+        this.formatLength = formatLength
+    }
+
     formatLength: (line:any) =>string;
 
-    createMark(saveData: string, memo?: string): LengthMark {
+    createMark(saveData: string, toolType: string, memo?: string): LengthMark {
         let mark = this.loadSaveData(LengthMark, saveData);
         let geo = new LineString(mark.location);
         mark.feature = new Feature(geo);
-        mark.toolType = Tools.Length;
+        mark.toolType = toolType;
         mark.feature.set(TOOL_MEMO, memo);
-        mark.feature.set(TOOL_TYPE, Tools.Length);
+        mark.feature.set(TOOL_TYPE, toolType);
 
         return mark;
     }
@@ -59,10 +64,6 @@ class LengthDrawer extends BaseDrawer<LengthMark> {
         mark.refresh();
 
         return mark;
-    }
-
-    setFormatLength(formatLength: (length:number) =>string) {
-        this.formatLength = formatLength
     }
 
     createDraw(layer:VectorLayer<Feature<Geometry>>) {
@@ -91,8 +92,8 @@ class LengthDrawer extends BaseDrawer<LengthMark> {
         return this.modify;
     }
 
-    getVectorStyle(feature?: FeatureLike, customFunc?: any): Style | Style[] {
-        return measureStyleFunciton(feature, customFunc);
+    getVectorStyle(feature?: FeatureLike): Style | Style[] {
+        return measureStyleFunciton(feature, this.formatLength);
     }
 }
 

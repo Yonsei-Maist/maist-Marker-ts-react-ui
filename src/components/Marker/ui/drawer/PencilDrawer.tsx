@@ -1,7 +1,7 @@
 import { Feature } from "ol";
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Select } from "ol/interaction";
-import { Tools, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import { TOOL_TYPE } from "../nevigator/ToolNavigator";
 import VectorLayer from "ol/layer/Vector";
 
 import PolygonDrawer, { PolygonMark } from "./PolygonDrawer";
@@ -9,10 +9,10 @@ import { Extent } from "ol/extent";
 
 class PencilDrawer extends PolygonDrawer {
 
-    createMark(saveData: string, memo?: string): PolygonMark {
+    createMark(saveData: string, toolType: string, memo?: string): PolygonMark {
         let mark = super.createMark(saveData, memo);
-        mark.toolType = Tools.Pencil;
-        mark.feature.set(TOOL_TYPE, Tools.Pencil);
+        mark.toolType = toolType;
+        mark.feature.set(TOOL_TYPE, toolType);
 
         return mark;
     }

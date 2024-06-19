@@ -1,0 +1,1 @@
+export { default as SegmentPicker } from "./component";

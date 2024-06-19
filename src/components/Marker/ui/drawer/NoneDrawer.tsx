@@ -2,7 +2,7 @@ import { Geometry } from "ol/geom";
 import { Draw } from "ol/interaction";
 import { Vector } from "ol/source";
 import BaseMark from "../mark/BaseMark";
-import { ToolContext, Tools } from "../nevigator/ToolNavigator";
+import { ToolContext } from "../nevigator/ToolNavigator";
 import BasicDrawer from "./BaseDrawer";
 import Feature from "ol/Feature";
 import VectorLayer from "ol/layer/Vector";
@@ -26,7 +26,7 @@ class NoneDrawer extends BasicDrawer<BaseMark> {
 
     activeModify(context: ToolContext) {
         context.drawerMap.forEach((value, key) => {
-            if (key != Tools.None)
+            if (key != "")
                 value.getModify().setActive(false);
         });
     }

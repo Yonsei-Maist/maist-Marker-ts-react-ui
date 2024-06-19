@@ -5,20 +5,22 @@
  */
 
 import { useReducer, useEffect } from 'react';
-import { ResponseMessage, ResponseSimple, ResultData } from '../models/response';
+import { ResponseMessage, ResultData } from '../models/response';
 
 export interface ReducerState {
     loading: boolean;
     data?: ResultData;
     error: boolean;
+    errorMessage?: string;
 }
 
-interface ReducerAction {
+export interface ReducerAction {
     type: string;
     data?: ResultData;
+    errorMessage?: string;
 }
 
-function reducer(state:ReducerState, action:ReducerAction): ReducerState {
+export function reducer(state:ReducerState, action:ReducerAction): ReducerState {
     switch (action.type) {
         case 'LOADING':
             return {
@@ -35,7 +37,8 @@ function reducer(state:ReducerState, action:ReducerAction): ReducerState {
         case 'ERROR':
             return {
                 loading: false,
-                error: true
+                error: true,
+                errorMessage: action.errorMessage
             };
         default:
             throw new Error(`Unhandled action type: ${action.type}`);
@@ -56,9 +59,10 @@ function useAsync(callback: ()=>Promise<ResponseMessage>, deps: React.Dependency
             if (responseMessage.result == "success")
                 dispatch({ type: 'SUCCESS', data: responseMessage.data });
             else
-                dispatch({ type: 'ERROR'});
+                dispatch({ type: 'ERROR', errorMessage: responseMessage.errMessage});
         } catch (e) {
-            dispatch({ type: 'ERROR'});
+            console.log(e);
+            dispatch({ type: 'ERROR', errorMessage: e + ""});
         }
     };
 

@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { LabelContext, LabelInformation, MapContext } from '../../context';
+import React, { useState } from 'react';
+import { LabelInformation } from '../../context';
 import { MARK, TOOL_TYPE } from './ToolNavigator';
 
 import { Drawer, List, ListItem, Button, Stack, styled, Checkbox, Typography, IconButton, Box, TextField, Autocomplete, Tooltip, FormControlLabel, Divider, useTheme } from '@mui/material';
@@ -7,9 +7,8 @@ import { ArrowRight, DeleteForever, Edit } from '@mui/icons-material';
 import LabelMemoControl, { LabelMemoType } from '../controls/LabelMemoControl';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LabelNameManager from '../dialog/LabelNameManager';
-import VectorLayer from 'ol/layer/Vector';
-import { Feature } from 'ol';
-import { Geometry } from 'ol/geom';
+import { useLabel } from '../../provider/LabelProvider';
+import { useMap } from '../../provider/MarkerProvider';
 
 const RelDrawer = styled(Drawer)(({ theme }) => ({
     "& .MuiDrawer-paper": {
@@ -46,8 +45,8 @@ type LabelNavigatorProps = {
 
 function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, onOpenChange = () => { } }: LabelNavigatorProps) {
     const theme = useTheme();
-    const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, refresh, setSelectedFeatures, removeLabel, setSelectedLabel } = useContext(LabelContext);
-    const { redrawFeatures, remove, select, unselect } = useContext(MapContext);
+    const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, setSelectedFeatures, removeLabel, setSelectedLabel } = useLabel();
+    const { redrawFeatures, remove, select, unselect } = useMap();
 
     const [openManager, setOpenManager] = useState(false);
     
@@ -158,7 +157,6 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, onOpenC
             </List>
             <LabelNameManager open={openManager} onHandleClose={() => {
                 setOpenManager(false);
-                refresh();
                 redrawFeatures();
             }} />
         </RelDrawer>

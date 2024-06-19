@@ -4,7 +4,7 @@ import BasicDrawer from "./BaseDrawer";
 import { createBox } from 'ol/interaction/Draw';
 import { never, platformModifierKeyOnly, primaryAction } from "ol/events/condition";
 import { Feature } from "ol";
-import { Tools, TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
+import { TOOL_MEMO, TOOL_TYPE } from "../nevigator/ToolNavigator";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
 import VectorLayer from "ol/layer/Vector";
@@ -86,14 +86,14 @@ class BoxMark extends BaseMark {
 
 class BoxDrawer extends BasicDrawer<BoxMark> {
 
-    createMark(saveData: string, memo?: string): BoxMark {
+    createMark(saveData: string, toolType: string, memo?: string): BoxMark {
         let mark = this.loadSaveData(BoxMark, saveData);
 
         let geo = new Polygon(mark.location);
         mark.feature = new Feature(geo);
         mark.feature.set(TOOL_MEMO, memo);
-        mark.feature.set(TOOL_TYPE, Tools.Box);
-        mark.toolType = Tools.Box;
+        mark.feature.set(TOOL_TYPE, toolType);
+        mark.toolType = toolType;
         return mark;
     }
 

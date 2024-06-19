@@ -1,15 +1,16 @@
 import { ArrowLeft, ArrowRight } from "@mui/icons-material";
 import { Box, IconButton, Stack, TextField, Typography } from "@mui/material";
-import React, { useContext, useEffect, useState } from "react";
-import PDFObject from "../../../../lib/PDFObject";
-import { LabelContext, MapContext, MapObject } from "../../context";
+import React, { useEffect, useState } from "react";
+import {PDFObject} from "../../../../api/pdfReader";
+import { useMap } from "../../provider/MarkerProvider";
+import { useLabel } from "../../provider/LabelProvider";
 
 export const PDF_OBJECT = "PDF_OBJECT";
 export const PDF_CURRENT_PAGE_NO = "PDF_CURRENT_PAGE_NO";
 
 function PDFPageControl() {
-    const { map, isLoaded } = useContext(MapContext) as MapObject;
-    const { currentPageNo, setCurrentPageNo, initPageLabelList } = useContext(LabelContext);
+    const { map, isLoaded } = useMap();
+    const { currentPageNo, setCurrentPageNo, initPageLabelList } = useLabel();
 
     const [currentPageNoStr, setCurrentPageNoStr] = useState("1");
     const [total, setTotal] = useState(-1);
@@ -50,17 +51,21 @@ function PDFPageControl() {
         if (isLoaded) {
             const pdfObject = map.get(PDF_OBJECT) as PDFObject;
         
-            pdfObject.setCurrentPageNo(value);
-            pdfObject.drawing();
+            if (pdfObject) {
+                pdfObject.setCurrentPageNo(value);
+                pdfObject.drawing();
+            }
         }
     }
 
     useEffect(() => {
         if (isLoaded) {
             const pdfObject = map.get(PDF_OBJECT) as PDFObject;
-            let total = pdfObject.pages.length;
-            setTotal(total);
-            initPageLabelList(total);
+            if (pdfObject) {
+                let total = pdfObject.pages.length;
+                setTotal(total);
+                initPageLabelList(total);
+            }
         }
     }, [isLoaded]);
 

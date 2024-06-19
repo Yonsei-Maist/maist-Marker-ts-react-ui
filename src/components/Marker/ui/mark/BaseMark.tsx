@@ -1,6 +1,5 @@
 import { Feature } from "ol";
 import { LabelInformation } from "../../context";
-import { Tools } from "../nevigator/ToolNavigator";
 
 export interface LabelFormat {
     mark: BaseMark;
@@ -11,7 +10,7 @@ export interface LabelFormat {
 class BaseMark {
     memo: string;
     feature: Feature;
-    toolType: Tools;
+    toolType: string;
     label: LabelInformation;
     id: string;
 

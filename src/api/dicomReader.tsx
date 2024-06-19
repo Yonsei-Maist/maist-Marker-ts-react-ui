@@ -1,5 +1,5 @@
 import dicomParser from "dicom-parser";
-import CanvasDrawer from "./CanvasDrawer";
+import CanvasDrawer from "../lib/CanvasDrawer";
 
 import cornerstoneWADOImageLoader from 'cornerstone-wado-image-loader';
 import cornerstone from "cornerstone-core";
@@ -14,9 +14,6 @@ export class DicomObject extends CanvasDrawer{
     private dataSet: any;
     private photometricInterpretation: string;
     private pixelData: any;
-
-    public readonly originWindowWidth: number;
-    public readonly originWindowCenter: number;
 
     public ww: number;
     public wc: number;
@@ -97,21 +94,10 @@ export function isDicom(url: string) {
     return url.indexOf(".dcm") > -1;
 }
 
-async function dicomReader(url: string, header?: HeaderString[], withCredentials?: boolean) {
-    if (header || withCredentials == true) {
-        cornerstoneWADOImageLoader.configure({
-            beforeSend: function (xhr: XMLHttpRequest) {
-                xhr.withCredentials = withCredentials;
-
-                if (header) {
-                    for (let i = 0; i < header.length; i++) {
-                        xhr.setRequestHeader(header[i].key, header[i].value);
-                    }
-                }
-            },
-        });
-    }
-    return await cornerstone.loadAndCacheImage('wadouri:' + url);
+async function dicomReader(fileBuffer:ArrayBuffer) {
+    const fileBlob = new Blob([fileBuffer]);
+    const imageId = cornerstoneWADOImageLoader.wadouri.fileManager.add(fileBlob);
+    return await cornerstone.loadAndCacheImage(imageId);
 }
 
 export default dicomReader;
