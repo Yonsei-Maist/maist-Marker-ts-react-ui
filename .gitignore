@@ -30,3 +30,4 @@ yarn-error.log*
 *storybook.log
 
 /**/node_modules
+/**/dist

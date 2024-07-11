@@ -6,7 +6,6 @@
   "types": "./dist/types/index.d.ts",
   "scripts": {
     "deploy": "npm publish",
-    "build-storybook": "storybook build",
     "build": "rm -rf ./dist && npm run build:tsc && npm run build:babel",
     "build:tsc": "tsc",
     "build:babel": "babel src --out-dir dist --extensions \".ts,.tsx\" --ignore \"src/stories/*\" --source-maps inline",
@@ -26,8 +25,16 @@
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "ol": "^9.0.0",
-    "@yonsei-maist/marker-segmentation-addon": "^1.1.0",
-    "@mui/icons-material": "^5.0.0"
+    "@mui/icons-material": "^5.0.0",
+    "@yonsei-maist/react-maist-marker": "^1.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@yonsei-maist/react-maist-marker": {
+      "optional": true
+    },
+    "ol": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@tensorflow-models/coco-ssd": "^2.2.3",
@@ -41,7 +48,6 @@
     "@babel/preset-typescript": "^7.24.7",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@yonsei-maist/react-maist-marker": "file:../../",
     "babel-loader": "^9.1.3",
     "typescript": "^5.4.5"
   }

@@ -1,10 +1,15 @@
 {
-  "name": "maist-marker",
-  "version": "0.0.1",
+  "name": "@yonsei-maist/react-maist-marker",
+  "version": "1.2.11",
   "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/types/index.d.ts",
   "scripts": {
-    "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "npm publish",
+    "build": "rm -rf ./dist && npm run build:tsc && npm run build:babel",
+    "build:tsc": "tsc",
+    "build:babel": "babel src --out-dir dist --extensions \".ts,.tsx\" --ignore \"src/stories/*\" --source-maps inline"
   },
   "repository": {
     "type": "git",
@@ -35,13 +40,32 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0"
   },
+  "peerDependenciesMeta": {
+    "@emotion/styled": {
+      "optional": true
+    },
+    "@mui/material": {
+      "optional": true
+    },
+    "@mui/icons-material": {
+      "optional": true
+    }
+  },
   "dependencies": {
-    "@yonsei-maist/marker-dicom-addon": "^1.2.1",
-    "@yonsei-maist/marker-dzi-addon": "^1.2.1",
-    "@yonsei-maist/marker-pdf-addon": "^1.2.2",
-    "@yonsei-maist/react-maist-marker": "^1.2.2"
+    "axios": "^1.7.2",
+    "buffer": "^6.0.3",
+    "buffer-image-size": "^0.6.4",
+    "ol": "^9.2.4",
+    "react-color": "^2.19.3",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "@babel/cli": "^7.17.10",
+    "@babel/core": "^7.18.0",
+    "@babel/preset-react": "^7.17.12",
+    "@babel/preset-typescript": "^7.17.12",
+    "@chromatic-com/storybook": "^1.4.0",
+    "@emotion/babel-plugin": "^11.9.2",
     "@storybook/addon-essentials": "^8.1.4",
     "@storybook/addon-interactions": "^8.1.4",
     "@storybook/addon-links": "^8.1.4",
@@ -51,6 +75,11 @@
     "@storybook/react": "^8.1.4",
     "@storybook/react-webpack5": "^8.1.4",
     "@storybook/test": "^8.1.4",
+    "@types/node": "^18.6.4",
+    "@types/react-color": "^3.0.12",
+    "@types/uuid": "^8.3.4",
+    "@types/webpack": "^5.28.5",
+    "babel-loader": "^9.1.3",
     "storybook": "^8.1.4",
     "stream-browserify": "^3.0.0",
     "typescript": "^4.6.4"

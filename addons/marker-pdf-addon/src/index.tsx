@@ -1,0 +1,1 @@
+export {default as PdfReader} from "./component/PdfReader";

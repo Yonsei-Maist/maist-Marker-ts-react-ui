@@ -1,0 +1,1 @@
+export { default as DziReader } from "./component/DziReader";

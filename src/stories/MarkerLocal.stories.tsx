@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 // import Marker from "./Marker";
 
-import { Marker } from ".."
+import { Marker } from "../../core"
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
 
 const MarkerContainer = () => {
+    const label = [[{label: 'dd', toolType: 'Box', data: {coco: [0, 0, 80, 80]}}]];
     const [fileBlob, setFileBlob] = useState<Blob | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ const MarkerContainer = () => {
         <div><input type="file" onChange={handleFileChange} accept=".pdf,.dcm,image/*" /></div>
         {
             fileBlob &&
-            <Marker fileUri={fileName || ""} fileBlob={fileBlob} ></Marker>
+            <Marker fileUri={fileName || ""} fileBlob={fileBlob} options={{fitPoint:false, savedLabelInfo: label}} ></Marker>
         }
     </div>
 };

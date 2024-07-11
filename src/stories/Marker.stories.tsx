@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 // import Marker from "./Marker";
 
-import { LabelInfo, LabelMemoType, Marker, MarkerProps } from ".."
+import { LabelMemoType, Marker, MarkerProps, PresetBox } from "../../core/src";
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
 
@@ -10,10 +10,16 @@ interface MarkerContainerProps extends MarkerProps {
     referenceUrl: string;
 }
 
-const MarkerContainer = (args: MarkerContainerProps) => <div style={{ height: "800px", width: "100%" }}>
-    <div><a href={args.referenceUrl}>{args.reference}</a></div>
-    <Marker {...args}></Marker>
-</div>;
+const MarkerContainer = (args: MarkerContainerProps) => {
+
+    return <div style={{ height: "800px", width: "100%" }}>
+
+        <div><a href={args.referenceUrl}>{args.reference}</a></div>
+        <Marker {...args}>
+            <PresetBox/>
+        </Marker>
+    </div>
+};
 
 const meta: Meta<typeof MarkerContainer> = {
     title: 'Markers',
@@ -28,79 +34,41 @@ const meta: Meta<typeof MarkerContainer> = {
 
 export default meta;
 type Story = StoryObj<typeof MarkerContainer>;
-export const Dzi: Story = {
-    args: {
-        referenceUrl: "https://openseadragon.github.io",
-        reference: "Image from OpenSeadragon",
-        fileUri: "https://openseadragon.github.io/example-images/highsmith/highsmith.dzi",
-    },
-};
 
+const args = {
+    referenceUrl: "https://www.nasa.gov/",
+    reference: "Image from NASA",
+    fileUri: "https://dev-demo.connected-in.co.kr/example/stephans_quintet.jpeg",
+}
 export const Image: Story = {
-    args: {
-        referenceUrl: "https://www.nasa.gov/",
-        reference: "Image from NASA",
-        fileUri: "https://dev-demo.connected-in.co.kr/example/stephans_quintet.jpeg",
-    },
-};
-
-const url = "https://dev-demo.connected-in.co.kr/example/I0.dcm";
-
-export const Dicom: Story = {
-    args: {
-        referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
-        reference: "Image from Medimodel",
-        fileUri: url,
-        options: { dcmWithCredentials: false, labelNameList: [], localSave: false }
-    },
-};
-
-export const DicomSetWindow: Story = {
-    args: {
-        referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
-        reference: "Image from Medimodel",
-        fileUri: url,
-        options: { dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}", localSave: false }
-    },
-};
-
-export const PDF: Story = {
-    args: {
-        referenceUrl: "http://www.africau.edu/images/default/sample.pdf",
-        reference: "PDF from africau",
-        fileUri: "https://dev-demo.connected-in.co.kr/example/sample.pdf",
-    },
+    args: args,
 };
 
 export const LabelName: Story = {
     args: {
-        referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
-        reference: "Image from Medimodel",
-        fileUri: url,
+        ...args,
+        saveHandler: (label) => console.log(label),
         options: {
-            dcmWithCredentials: false,
+            modifyOnly: true,
+            fitPoint: false,
+            withCredentials: false,
             labelNameList: [
-                "Normal",
-                "Abnormal"
+                "나선은하",
+                "타원형은하"
             ],
             labelMemoType: LabelMemoType.select,
-            labelMemoOptions: ["발목", "오른쪽 엄지발가락"]
+            labelMemoOptions: ["1000000ly 이하", "1000000ly 이상"],
+            savedLabelInfo: [
+                [
+                    {
+                        label: "나선은하",
+                        toolType: "Box",
+                        data: {
+                            coco: [25, 80, 160, 180]
+                        }
+                    }
+                ]
+            ],
         }
-    },
-};
-
-export const ToolPolygonOnly: Story = {
-    args: {
-        referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
-        reference: "Image from Medimodel",
-        fileUri: url,
-    },
-};
-
-export const ToolLengthOnly: Story = {
-    args: {
-        referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
-        reference: "Image from Medimodel",
-        fileUri: url,
     },
 };

@@ -1,0 +1,51 @@
+{
+    "name": "@yonsei-maist/marker-pdf-addon",
+    "version": "1.2.2",
+    "description": "PDF reader addon",
+    "main": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "scripts": {
+        "deploy": "npm publish",
+        "build": "rm -rf ./dist && npm run build:tsc && npm run build:babel",
+        "build:tsc": "tsc",
+        "build:babel": "babel src --out-dir dist --extensions \".ts,.tsx\" --source-maps inline"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/Yonsei-Maist/maist-Marker-ts-react-ui.git"
+    },
+    "publishConfig": {
+      "registry": "https://npm.pkg.github.com/"
+    },
+    "author": "kwoncwoo@gmail.com",
+    "license": "MIT",
+    "peerDependencies": {
+        "ol": "^9.2.4",
+        "axios": "^1.7.2",
+        "@yonsei-maist/react-maist-marker": "^1.2.2"
+    },
+    "peerDependenciesMeta": {
+        "@yonsei-maist/react-maist-marker": {
+            "optional": true
+        },
+        "ol": {
+            "optional": true
+        },
+        "axios": {
+            "optional": true
+        }
+    },
+    "dependencies": {
+        "pdfjs-dist": "^4.3.136"
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.24.7",
+        "@babel/core": "^7.24.7",
+        "@babel/preset-react": "^7.24.7",
+        "@babel/preset-typescript": "^7.24.7",
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "babel-loader": "^9.1.3",
+        "typescript": "^5.4.5"
+    }
+}
