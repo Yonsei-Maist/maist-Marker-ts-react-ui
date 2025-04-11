@@ -8,7 +8,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LabelNameManager from '../controls/LabelNameManager';
 import { useLabel } from '../../provider/LabelProvider';
 import { useMap } from '../../provider/MarkerProvider';
-import { MARK, TOOL_TYPE } from '../../../../constants/tag';
+import { MARK, TOOL_TYPE } from '@/constants/tag';
 
 const RelDrawer = styled(Drawer)(({ theme }) => ({
     "& .MuiDrawer-paper": {
@@ -46,7 +46,7 @@ interface LabelNavigatorProps {
 
 function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageLabels, onOpenChange = () => { } }: LabelNavigatorProps) {
     const theme = useTheme();
-    const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, setSelectedFeatures, removeLabel, setSelectedLabel } = useLabel();
+    const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, setSelectedFeatures, removeLabel, setSelectedLabel, refreshLabels } = useLabel();
     const { redrawFeatures, remove, select, unselect } = useMap();
 
     const [openManager, setOpenManager] = useState(false);
@@ -145,6 +145,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                         o.feature.set(MARK, o);
                                         redrawFeatures();
                                         setSelectedFeatures(selectedFeatures);
+                                        refreshLabels();
                                     }}/>
                                     <Box display={"flex"}>
                                         <Typography flexGrow={1} variant='overline'>{o.memo}</Typography>

@@ -21,14 +21,14 @@ import { Box, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { HighlightAlt, HighlightAltOutlined } from '@mui/icons-material';
 import BaseMark, { LabelFormat, LabelInfo } from '../mark/BaseMark';
 import Geometry from 'ol/geom/Geometry';
-import { constrainGeometry, fitPoints } from '../../../../lib/sizeConverter';
+import { constrainGeometry, fitPoints } from '@/lib/sizeConverter';
 import { GeometryCollection, Polygon } from 'ol/geom';
 import LongPressToggleButton from '../common/LongPressToggleButton';
 import { useMap } from '../../provider/MarkerProvider';
 import { useLabel } from '../../provider/LabelProvider';
 import { useAddon } from '../../provider/AddonProvider';
-import { DrawObject } from '../../../../lib/CanvasDrawer';
-import { DRAW_OBJECT, IS_DRAWER_VECTOR, MAP_HEIGHT, MAP_WIDTH, MARK, TOOL_TYPE } from "../../../../constants/tag";
+import { DrawObject } from '@/lib/CanvasDrawer';
+import { DRAW_OBJECT, IS_DRAWER_VECTOR, MAP_HEIGHT, MAP_WIDTH, MARK, TOOL_TYPE } from "@/constants/tag";
 
 enum Mode {
     Draw,
@@ -133,7 +133,8 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
 
                             data = {
                                 coco: item.data.coco ? fitPoints(iW, iH, item.data.coco, false, fitPoint) : undefined,
-                                pascal_voc: item.data.pascal_voc ? fitPoints(iW, iH, item.data.pascal_voc, false, fitPoint) : undefined
+                                pascal_voc: item.data.pascal_voc ? fitPoints(iW, iH, item.data.pascal_voc, false, fitPoint) : undefined,
+                                yolo: item.data.yolo ? fitPoints(iW, iH, item.data.yolo, false, fitPoint) : undefined
                             }
                         } else {
                             data = item.data;

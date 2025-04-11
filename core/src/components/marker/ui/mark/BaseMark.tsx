@@ -5,6 +5,7 @@ export interface LabelFormat {
     mark?: BaseMark;
     coco: number[];
     pascal_voc?: number[];
+    yolo?: number[];
 }
 
 export interface LabelInfo {

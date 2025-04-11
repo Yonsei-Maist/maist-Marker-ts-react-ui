@@ -8,17 +8,17 @@ import AreaDrawer from "../drawer/AreaDrawer";
 import LengthDrawer from "../drawer/LengthDrawer";
 import PolygonDrawer from "../drawer/PolygonDrawer";
 import { SourceData, useReaderAddon } from "../../provider/ReaderProvider";
-import { ResponseMessage, ResultData } from "../../../../models/response";
+import { ResponseMessage, ResultData } from "@/models/response";
 import { Map, View } from "ol";
 
 import sizeOf from 'buffer-image-size';
 import { AxiosInstance } from "axios";
-import { fitSize } from "../../../../lib/sizeConverter";
+import { fitSize } from "@/lib/sizeConverter";
 import Static from "ol/source/ImageStatic";
 import ImageLayer from "ol/layer/Image";
 import { getCenter } from "ol/extent";
-import { DrawObject } from "../../../../lib/CanvasDrawer";
-import { DRAW_OBJECT } from "../../../../constants/tag";
+import { DrawObject } from "@/lib/CanvasDrawer";
+import { DRAW_OBJECT } from "@/constants/tag";
 
 interface AddonNodeProps {
     addon?: Addon;

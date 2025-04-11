@@ -11,7 +11,7 @@ import { FeatureLike } from "ol/Feature";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
 import BaseDrawer from "./BaseDrawer";
-import { TOOL_MEMO, TOOL_TYPE } from "../../../../constants/tag";
+import { TOOL_MEMO, TOOL_TYPE } from "@/constants/tag";
 
 class LengthMark extends BaseMark {
     location: Coordinate[];

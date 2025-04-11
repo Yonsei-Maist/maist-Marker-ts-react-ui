@@ -1,6 +1,5 @@
 import { Geometry } from "ol/geom";
 import { Draw } from "ol/interaction";
-import { Vector } from "ol/source";
 import BaseMark from "../mark/BaseMark";
 import { ToolContext } from "../nevigator/ToolNavigator";
 import BasicDrawer from "./BaseDrawer";

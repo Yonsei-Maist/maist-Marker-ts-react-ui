@@ -21,6 +21,7 @@ export interface LabelContextObject {
     setSelectedFeatures?: (feature?: Feature[]) => void;
     addLabel: (feature: BaseMark, labelName?:string) => void;
     removeLabel: (feature: Feature) => void;
+    refreshLabels: () => void;
 }
 
 const LabelContext = React.createContext({} as LabelContextObject);

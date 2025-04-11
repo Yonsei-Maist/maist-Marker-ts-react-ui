@@ -11,8 +11,7 @@ import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";
 
-import { Map} from "ol"
-import { TOOL_MEMO, TOOL_TYPE } from "../../../../constants/tag";
+import { TOOL_MEMO, TOOL_TYPE } from "@/constants/tag";
 
 const isThumb = (coordinates: Coordinate[], point: Coordinate) => {
     for (let i in coordinates) {
@@ -99,7 +98,8 @@ class EllipseMark extends BaseMark {
             return {
                 mark: this,
                 coco: [minX, adjustedMinY, width, adjustedHeight],  // x, y, w, h
-                pascal_voc: [minX, minY, maxX, maxY]
+                pascal_voc: [minX, adjustedMinY, maxX, adjustedMaxY],
+                yolo: [minX + width / 2, adjustedMinY + adjustedHeight / 2, width, adjustedHeight]
             };
         }
 

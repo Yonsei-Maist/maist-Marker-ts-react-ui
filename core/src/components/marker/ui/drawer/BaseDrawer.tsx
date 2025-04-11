@@ -8,9 +8,9 @@ import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";
 
 import { Map} from "ol"
-import { fitPoints } from "../../../../lib/sizeConverter";
-import { DRAW_OBJECT, MAP_HEIGHT, MAP_WIDTH, MARK } from "../../../../constants/tag";
-import { DrawObject } from "../../../../lib/CanvasDrawer";
+import { fitPoints } from "@/lib/sizeConverter";
+import { DRAW_OBJECT, MAP_HEIGHT, MAP_WIDTH, MARK } from "@/constants/tag";
+import { DrawObject } from "@/lib/CanvasDrawer";
 
 class BasicDrawer<T extends BaseMark> {
     draw:Draw;
@@ -76,6 +76,7 @@ class BasicDrawer<T extends BaseMark> {
 
         savedData.coco = savedData.coco ? fitPoints(iW, iH, savedData.coco, true, fitPoint): savedData.coco;
         savedData.pascal_voc = savedData.pascal_voc ? fitPoints(iW, iH, savedData.pascal_voc, true, fitPoint): savedData.pascal_voc;
+        savedData.yolo = savedData.yolo ? fitPoints(iW, iH, savedData.yolo, true, fitPoint): savedData.yolo;
 
         return savedData;
     }

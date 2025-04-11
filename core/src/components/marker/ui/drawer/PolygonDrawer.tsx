@@ -6,7 +6,7 @@ import { Draw, Modify, Select } from "ol/interaction";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import BaseDrawer from "./BaseDrawer";
 import VectorLayer from "ol/layer/Vector";
-import { TOOL_MEMO, TOOL_TYPE } from "../../../../constants/tag";
+import { TOOL_MEMO, TOOL_TYPE } from "@/constants/tag";
 
 export function clipPolygon(extent: number[], polygon: Polygon) {
     const [xmin, ymin, xmax, ymax] = extent;

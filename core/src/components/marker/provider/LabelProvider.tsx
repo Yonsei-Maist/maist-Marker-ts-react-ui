@@ -79,6 +79,10 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
         }
     }
 
+    function refreshLabels() {
+        setPageLabelList(new Map(pageLabelList));
+    }
+
     useEffect(() => {
         if (originLabelNameList.length > 0) {
             setSelectedLabel(originLabelNameList[0]);
@@ -96,7 +100,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
 
     return <LabelContext.Provider value={{
         pageLabelList, currentPageNo, labelNameList, selectedFeatures, selectedLabel,
-        setSelectedFeatures, addLabel, removeLabel, setCurrentPageNo, initPageLabelList, setLabelNameList, setSelectedLabel
+        setSelectedFeatures, addLabel, removeLabel, setCurrentPageNo, initPageLabelList, setLabelNameList, setSelectedLabel, refreshLabels
     }}>
         {children}
     </LabelContext.Provider>

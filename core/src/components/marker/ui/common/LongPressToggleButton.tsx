@@ -1,6 +1,6 @@
 import React, { useState, useRef, MouseEvent, TouchEvent } from 'react';
 import { ToggleButton, ToggleButtonGroup, ClickAwayListener, Box, Popper } from '@mui/material';
-import { Addon, AddonItem } from '../../provider/AddonProvider';
+import { AddonItem } from '../../provider/AddonProvider';
 
 interface LongPressToggleButtonProps {
     value: string;

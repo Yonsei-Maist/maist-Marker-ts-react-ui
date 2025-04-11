@@ -21,7 +21,6 @@ import PageControl from './controls/PageControl';
 import { allocateColor } from '../../../lib/colorAllocator';
 import { LabelMemoType } from './controls/LabelMemoControl';
 import { LabelInformation } from '../context';
-import { useReaderAddon } from '../provider/ReaderProvider';
 import { TOOL_TYPE } from '../../../constants/tag';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";

@@ -1,13 +1,14 @@
 import { Geometry, Point, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
+import { Vector } from "ol/source";
 import BasicDrawer from "./BaseDrawer";
 import { createBox } from 'ol/interaction/Draw';
 import { never, platformModifierKeyOnly, primaryAction } from "ol/events/condition";
 import { Feature } from "ol";
+import { TOOL_MEMO, TOOL_TYPE } from "@/constants/tag";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
 import VectorLayer from "ol/layer/Vector";
-import { TOOL_MEMO, TOOL_TYPE } from "../../../../constants/tag";
 
 function fitBox(extent: number[], geometry: Polygon) {
 
@@ -57,39 +58,43 @@ class BoxMark extends BaseMark {
     location: Coordinate[][];
 
     refresh(): LabelFormat {
-        let feature = this.feature;
-        
-        if (feature) {
-            this.location = (feature.getGeometry() as Polygon).getCoordinates();
-            let location_one = this.location[0];
-            const xs = location_one.map(point => Math.abs(point[0]));
-            const ys = location_one.map(point => Math.abs(point[1]));
-    
-            const minX = Math.min(...xs);
-            const minY = Math.min(...ys);
-            const maxX = Math.max(...xs);
-            const maxY = Math.max(...ys);
-    
-            const width = maxX - minX;
-            const height = maxY - minY;
-    
-            return {
-                mark: this,
-                coco: [minX, minY, width, height],  // x, y, w, h
-                pascal_voc: [minX, minY, maxX, maxY]
-            }
+        if (!this.feature) {
+            return super.refresh();
         }
+        const polygon = this.feature.getGeometry() as Polygon;
+        this.location = polygon.getCoordinates();
+        const coordinates = polygon.getCoordinates()[0];
+        const xs = coordinates.map(coord => coord[0]);
+        const ys = coordinates.map(coord => coord[1]);
 
-        return super.refresh();
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+        const centerX = minX + width / 2;
+        const centerY = minY + height / 2;
+
+        return {
+            mark: this,
+            coco: [minX, minY, width, height],
+            pascal_voc: [minX, minY, maxX, maxY],
+            yolo: [centerX, centerY, width, height]
+        };
     }
 
     fromFormat(format: LabelFormat): void {
         if (format.coco) {
+            // coco format: [minX, minY, width, height]
             const minX = format.coco[0];
             const minY = format.coco[1];
-            const maxX = format.coco[0] + format.coco[2];
-            const maxY = format.coco[1] + format.coco[3];
-
+            const width = format.coco[2];
+            const height = format.coco[3];
+            const maxX = minX + width;
+            const maxY = minY + height;
+            // 좌표의 두 번째 값에 -를 붙여 y축 반전을 적용하고, 닫힌 다각형으로 생성
             this.location = [[
                 [minX, -minY],
                 [maxX, -minY],
@@ -98,11 +103,28 @@ class BoxMark extends BaseMark {
                 [minX, -minY]
             ]];
         } else if (format.pascal_voc) {
-            const minX = format.coco[0];
-            const minY = format.coco[1];
-            const maxX = format.coco[2];
-            const maxY = format.coco[3];
-
+            // pascal_voc format: [minX, minY, maxX, maxY]
+            const minX = format.pascal_voc[0];
+            const minY = format.pascal_voc[1];
+            const maxX = format.pascal_voc[2];
+            const maxY = format.pascal_voc[3];
+            this.location = [[
+                [minX, -minY],
+                [maxX, -minY],
+                [maxX, -maxY],
+                [minX, -maxY],
+                [minX, -minY]
+            ]];
+        } else if (format.yolo) {
+            // yolo format: [centerX, centerY, width, height]
+            const centerX = format.yolo[0];
+            const centerY = format.yolo[1];
+            const width = format.yolo[2];
+            const height = format.yolo[3];
+            const minX = centerX - width / 2;
+            const maxX = centerX + width / 2;
+            const minY = centerY - height / 2;
+            const maxY = centerY + height / 2;
             this.location = [[
                 [minX, -minY],
                 [maxX, -minY],
@@ -111,6 +133,7 @@ class BoxMark extends BaseMark {
                 [minX, -minY]
             ]];
         } else if ("location" in format.mark) {
+            // 이미 mark에 location이 포함된 경우 이를 사용
             this.location = format.mark.location as Coordinate[][];
         }
     }
@@ -119,14 +142,14 @@ class BoxMark extends BaseMark {
 class BoxDrawer extends BasicDrawer<BoxMark> {
 
     createMark(saveData: LabelFormat | string, toolType: string, memo?: string): BoxMark {
-        let mark = this.loadSaveData(BoxMark, saveData);
+        let parsed = this.loadSaveData(BoxMark, saveData);
 
-        let geo = new Polygon(mark.location);
-        mark.feature = new Feature(geo);
-        mark.feature.set(TOOL_MEMO, memo);
-        mark.feature.set(TOOL_TYPE, toolType);
-        mark.toolType = toolType;
-        return mark;
+        let geo = new Polygon(parsed.location);
+        parsed.feature = new Feature(geo);
+        parsed.feature.set(TOOL_MEMO, memo);
+        parsed.feature.set(TOOL_TYPE, toolType);
+        parsed.toolType = toolType;
+        return parsed;
     }
 
     fromFeature(feature: Feature<Geometry>): BoxMark {
@@ -140,7 +163,7 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         return mark;
     }
 
-    createDraw(layer:VectorLayer<Feature<Geometry>>) {
+    createDraw(layer: VectorLayer<Feature<Geometry>>) {
         this.draw = new Draw({
             source: layer.getSource(),
             freehand: false,
@@ -156,7 +179,7 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         return this.draw;
     }
 
-    createModify(layer: VectorLayer<Feature<Geometry>>, select:Select) {
+    createModify(layer: VectorLayer<Feature<Geometry>>, select: Select) {
         const defaultStyle = new Modify({ features: select.getFeatures() }).getOverlay().getStyleFunction();
         this.modify = new Modify({
             condition: function (event) {

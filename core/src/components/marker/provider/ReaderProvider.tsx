@@ -2,9 +2,9 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import axios, { AxiosInstance, AxiosRequestHeaders } from 'axios';
 import { Layer } from 'ol/layer';
 import { View, Map as OlMap } from 'ol';
-import { ResponseMessage } from '../../../models/response';
-import useAsync, { ReducerState } from '../../../hooks/useAsync';
-import { IS_MAIN_LAYER, MAP_HEIGHT, MAP_WIDTH } from '../../../constants/tag';
+import { ResponseMessage } from '@/models/response';
+import useAsync, { ReducerState } from '@/hooks/useAsync';
+import { IS_MAIN_LAYER, MAP_HEIGHT, MAP_WIDTH } from '@/constants/tag';
 
 export interface SourceData {
     layer: Layer;

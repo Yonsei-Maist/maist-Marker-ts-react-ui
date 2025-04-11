@@ -16,7 +16,7 @@ import { Alert, CircularProgress } from '@mui/material';
 import { Map as OlMap } from 'ol';
 import LabelProvider, { LabelProviderState } from './LabelProvider';
 import { useReaderAddon } from './ReaderProvider';
-import { IS_DRAWER_VECTOR, IS_MAIN_LAYER, MAP_MEMO } from '../../../constants/tag';
+import { IS_DRAWER_VECTOR, IS_MAIN_LAYER, MAP_MEMO } from '@/constants/tag';
 
 export interface MapProviderState {
     pageLabelList: () => BaseMark[][];

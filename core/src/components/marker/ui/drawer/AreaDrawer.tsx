@@ -3,7 +3,7 @@ import { primaryAction, platformModifierKeyOnly, never } from "ol/events/conditi
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import { Style } from "ol/style";
-import { TOOL_TYPE } from "../../../../constants/tag";
+import { TOOL_TYPE } from "@/constants/tag";
 import { measureStyleFunciton } from "./Styler";
 import VectorLayer from "ol/layer/Vector";
 import { FeatureLike } from "ol/Feature";

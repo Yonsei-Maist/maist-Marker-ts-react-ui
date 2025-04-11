@@ -5,7 +5,7 @@ import VectorLayer from "ol/layer/Vector";
 
 import PolygonDrawer, { PolygonMark } from "./PolygonDrawer";
 import { Extent } from "ol/extent";
-import { TOOL_TYPE } from "../../../../constants/tag";
+import { TOOL_TYPE } from "@/constants/tag";
 import { LabelFormat } from "../mark/BaseMark";
 
 class PencilDrawer extends PolygonDrawer {
