@@ -4,5 +4,18 @@
         "@babel/preset-react",
         "@babel/preset-typescript"
     ],
-    "plugins": ["@emotion"]
+    "plugins": [
+        "@emotion",
+        [
+            "module-resolver",
+            {
+                "root": [
+                    "./"
+                ],
+                "alias": {
+                    "@": "./src"
+                }
+            }
+        ]
+    ]
 }

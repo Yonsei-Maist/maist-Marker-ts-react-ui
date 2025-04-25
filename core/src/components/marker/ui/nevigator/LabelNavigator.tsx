@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LabelInformation } from '../../context';
+import { ClassInfo } from '../../context';
 
 import { Drawer, List, ListItem, Button, Stack, styled, Checkbox, Typography, IconButton, Box, TextField, Autocomplete, Tooltip, FormControlLabel, Divider, useTheme } from '@mui/material';
 import { ArrowRight, DeleteForever, Edit } from '@mui/icons-material';
@@ -42,9 +42,10 @@ interface LabelNavigatorProps {
     labelMemoOptions?: string[];
     manageLabels?: boolean;
     onOpenChange: () => void;
+    handleClassChanged?: (classInfoList: ClassInfo[]) => void;
 };
 
-function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageLabels, onOpenChange = () => { } }: LabelNavigatorProps) {
+function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageLabels, handleClassChanged, onOpenChange = () => { } }: LabelNavigatorProps) {
     const theme = useTheme();
     const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, setSelectedFeatures, removeLabel, setSelectedLabel, refreshLabels } = useLabel();
     const { redrawFeatures, remove, select, unselect } = useMap();
@@ -140,7 +141,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                             <DeleteForever />
                                         </IconButton>
                                     </Box>
-                                    <SelectClass title={''} value={o.label} onChange={(value: LabelInformation) => {
+                                    <SelectClass title={''} value={o.label} onChange={(value: ClassInfo) => {
                                         o.label = value;
                                         o.feature.set(MARK, o);
                                         redrawFeatures();
@@ -163,6 +164,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
             <LabelNameManager open={openManager} onHandleClose={() => {
                 setOpenManager(false);
                 redrawFeatures();
+                handleClassChanged?.(labelNameList);
             }} />
         </RelDrawer>
     );

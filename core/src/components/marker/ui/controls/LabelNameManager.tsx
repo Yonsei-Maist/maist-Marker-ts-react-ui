@@ -1,11 +1,11 @@
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, List, ListItem, Menu, TextField, Typography } from "@mui/material";
 import React, { useRef, useState } from "react";
-import { LabelInformation } from "../../context";
+import { ClassInfo } from "../../context";
 import { Create, Delete } from "@mui/icons-material";
 import { SketchPicker } from 'react-color';
 import { useLabel } from "../../provider/LabelProvider";
 
-function ColorBox({ref, color, onClick}) {
+function ColorBox({ ref, color, onClick }) {
     return <Box
         ref={ref}
         sx={{ width: '15px', height: '15px', backgroundColor: color, border: '1px solid darkgray', cursor: 'pointer' }}
@@ -14,9 +14,9 @@ function ColorBox({ref, color, onClick}) {
 }
 
 interface LabelNameListItemProps {
-    label: LabelInformation;
-    onHandleRemoveClass: (originLabel: LabelInformation) => void;
-    onHandleLabelChanged: (originLabel: LabelInformation, newLabel: LabelInformation) => void;
+    label: ClassInfo;
+    onHandleRemoveClass: (originLabel: ClassInfo) => void;
+    onHandleLabelChanged: (originLabel: ClassInfo, newLabel: ClassInfo) => void;
 }
 
 function LabelNameListItem({ label, onHandleRemoveClass, onHandleLabelChanged }: LabelNameListItemProps) {
@@ -41,7 +41,7 @@ function LabelNameListItem({ label, onHandleRemoveClass, onHandleLabelChanged }:
     return <ListItem>
         <Box display={'flex'} alignItems={'center'} sx={{ width: '100%' }}>
             <Typography flexGrow={1} variant="body1">{currentLabel.labelName}</Typography>
-            <ColorBox ref={anchorEl} color={label.color ? label.color : 'white'} onClick={() => { setOpen(true); }}/>
+            <ColorBox ref={anchorEl} color={label.color ? label.color : 'white'} onClick={() => { setOpen(true); }} />
             <IconButton onClick={(e) => { onHandleRemoveClass(label); }}><Delete /></IconButton>
         </Box>
         <Menu
@@ -79,14 +79,15 @@ function LabelNameManager({ open, onHandleClose }: LabelNameManagerProps) {
         if (exists) {
             setError('Dupplicated class name');
         } else {
-            setLabelNameList([...labelNameList, { labelName: currentClassName.trim(), color: currentColor } as LabelInformation]);
+            const newLabels = [...labelNameList, { labelName: currentClassName.trim(), color: currentColor } as ClassInfo];
+            setLabelNameList(newLabels);
             setError(undefined);
 
             setCurrentClassName("");
         }
     }
 
-    const onHandleRemoveClass = (labelInformation: LabelInformation) => {
+    const onHandleRemoveClass = (labelInformation: ClassInfo) => {
         let exists = pageLabelList.get(currentPageNo).find((o) => o.label.labelName == labelInformation.labelName);
         if (exists) {
             setError(`Please remove all labels named '${labelInformation.labelName}' before remove`);
@@ -101,7 +102,7 @@ function LabelNameManager({ open, onHandleClose }: LabelNameManagerProps) {
         }
     }
 
-    const onHandleLabelChanged = (originLabel: LabelInformation, newLabel: LabelInformation) => {
+    const onHandleLabelChanged = (originLabel: ClassInfo, newLabel: ClassInfo) => {
         let exists = labelNameList.find((o => o.labelName == originLabel.labelName));
 
         if (exists) {
@@ -129,39 +130,39 @@ function LabelNameManager({ open, onHandleClose }: LabelNameManagerProps) {
             Label Name manager
         </DialogTitle>
         <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-                <List>
-                    {
-                        labelNameList.map((o, i) => {
-                            return <LabelNameListItem
-                                key={i}
-                                label={o}
-                                onHandleRemoveClass={onHandleRemoveClass}
-                                onHandleLabelChanged={onHandleLabelChanged}
-                            />
-                        })
-                    }
-                </List>
-                <Box display={"flex"} alignItems={'center'}>
-                    {/* <SketchPicker color={currentColor} onChangeComplete={(c) => setCurrentColor(c.hex)}/> */}
-                    <TextField
-                        sx={{flexGrow: 1, mr: '15px'}}
-                        fullWidth
-                        size="small"
-                        title="Class Name"
-                        value={currentClassName}
-                        onChange={(e) => { setCurrentClassName(e.target.value); }}
-                        onKeyUp={(e) => {
-                            if (e.key == "Enter") {
-                                onHandleAddClass();
-                            }
-                        }}
-                        InputProps={{ endAdornment: <IconButton onClick={onHandleAddClass}><Create /></IconButton> }}
-                    />
-                    <ColorBox ref={anchorEl} color={currentColor} onClick={() => { setColorOpen(true); }}/>
-                </Box>
-                {error && <Alert severity='error'>{error}</Alert>}
-            </DialogContentText>
+            <List>
+                {
+                    labelNameList.map((o, i) => {
+                        return <LabelNameListItem
+                            key={i}
+                            label={o}
+                            onHandleRemoveClass={onHandleRemoveClass}
+                            onHandleLabelChanged={onHandleLabelChanged}
+                        />
+                    })
+                }
+            </List>
+            <Box display={"flex"} alignItems={'center'}>
+                {/* <SketchPicker color={currentColor} onChangeComplete={(c) => setCurrentColor(c.hex)}/> */}
+                <TextField
+                    sx={{ flexGrow: 1, mr: '15px' }}
+                    fullWidth
+                    size="small"
+                    title="Class Name"
+                    value={currentClassName}
+                    onChange={(e) => { setCurrentClassName(e.target.value); }}
+                    onKeyUp={(e) => {
+                        if (e.key == "Enter") {
+                            onHandleAddClass();
+                        }
+                    }}
+                    slotProps={{
+                        input: { endAdornment: <IconButton onClick={onHandleAddClass}><Create /></IconButton> },
+                    }}
+                />
+                <ColorBox ref={anchorEl} color={currentColor} onClick={() => { setColorOpen(true); }} />
+            </Box>
+            {error && <Alert severity='error'>{error}</Alert>}
         </DialogContent>
         <DialogActions>
             <Button onClick={() => { onHandleClose(); }}>완료</Button>

@@ -5,7 +5,7 @@ import React, { forwardRef, Ref, useContext, useEffect, useImperativeHandle, use
 import { defaults } from 'ol/control';
 
 import MapContext from '../context/MapContext';
-import { LabelInformation } from '../context';
+import { ClassInfo } from '../context';
 import { Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import { Geometry } from 'ol/geom';
@@ -20,7 +20,7 @@ import { IS_DRAWER_VECTOR, IS_MAIN_LAYER, MAP_MEMO } from '@/constants/tag';
 
 export interface MapProviderState {
     pageLabelList: () => BaseMark[][];
-    labelNameList: () => LabelInformation[];
+    labelNameList: () => ClassInfo[];
     map: () => OlMap;
     memo: () => string;
 }
@@ -30,7 +30,7 @@ interface MapProviderProps {
     fileBlob?: Blob;
     children?: React.ReactNode;
     axiosInstance?: AxiosInstance;
-    labelNameList: LabelInformation[];
+    labelNameList: ClassInfo[];
     header?: AxiosRequestHeaders;
     withCredentials?: boolean;
     memo?: string;

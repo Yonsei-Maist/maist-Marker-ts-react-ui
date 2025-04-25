@@ -1,16 +1,16 @@
 import React, { Ref, forwardRef, useContext, useEffect, useImperativeHandle, useState } from "react";
-import { LabelContext, LabelInformation } from "../context";
+import { LabelContext, ClassInfo } from "../context";
 import BaseMark from "../ui/mark/BaseMark";
 import { Feature } from "ol";
 import { LabelInfo } from "../ui";
 
 export interface LabelProviderState {
     pageLabelList: Map<number, BaseMark[]>;
-    labelNameList: LabelInformation[];
+    labelNameList: ClassInfo[];
 }
 
 interface LabelProviderProps {
-    labelNameList: LabelInformation[];
+    labelNameList: ClassInfo[];
     children?: React.ReactNode;
 }
 
@@ -19,7 +19,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
     const [currentPageNo, setCurrentPageNo] = useState(1);
     const [labelNameList, setLabelNameList] = useState(originLabelNameList);
     const [selectedFeatures, setLocalSelectedFeatures] = useState<Feature[]>();
-    const [selectedLabel, setSelectedLabel] = useState<LabelInformation>();
+    const [selectedLabel, setSelectedLabel] = useState<ClassInfo>();
 
     function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
         let localPageLabelList = pageLabelList

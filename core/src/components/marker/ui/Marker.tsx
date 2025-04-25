@@ -20,7 +20,7 @@ import 'ol/ol.css';
 import PageControl from './controls/PageControl';
 import { allocateColor } from '../../../lib/colorAllocator';
 import { LabelMemoType } from './controls/LabelMemoControl';
-import { LabelInformation } from '../context';
+import { ClassInfo } from '../context';
 import { TOOL_TYPE } from '../../../constants/tag';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
@@ -47,16 +47,17 @@ const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !==
 
 export interface MarkerState {
     getLabelList: () => LabelInfo[];
-    getLabelNameList: () => LabelInformation[];
+    getLabelNameList: () => ClassInfo[];
 }
 
 export interface MarkerProps {
     fileUri?: string;
     fileBlob?: Blob;
-    saveHandler?: (labelList: LabelInfo[][], memo?: string, callback?: () => void) => void;
     axiosInstance?: AxiosInstance;
     options?: MarkerOptions;
     children?: ReactNode;
+    saveHandler?: (labelList: LabelInfo[][], memo?: string, callback?: () => void) => void;
+    handleClassChanged?: (classInfoList: ClassInfo[]) => void;
 };
 
 export interface MarkerOptions {
@@ -64,7 +65,7 @@ export interface MarkerOptions {
     manageLabels?: boolean;
     savedLabelInfo?: LabelInfo[][];
     savedMemo?: string;
-    labelNameList?: LabelInformation[] | string[];
+    labelNameList?: ClassInfo[] | string[];
     header?: AxiosRequestHeaders;
     withCredentials?: boolean;
     labelMemoType?: LabelMemoType;
@@ -84,7 +85,7 @@ const defaultOptions: MarkerOptions = {
     modifyOnly: false
 }
 
-function Marker({ fileUri, fileBlob, saveHandler, axiosInstance, options = defaultOptions }: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChanged, options = defaultOptions }: MarkerProps, ref: Ref<MarkerState>) {
     const combinedOption = { ...defaultOptions, ...options }
     const providerState = useRef(null as MapProviderState | null);
 
@@ -95,7 +96,7 @@ function Marker({ fileUri, fileBlob, saveHandler, axiosInstance, options = defau
     const [memo, setMemo] = useState(combinedOption.savedMemo);
     const [localCheck, setLocalCheck] = useState(true);
 
-    const [globalLabelNameList, setGlobalLabelNameList] = useState<LabelInformation[] | undefined>(undefined);
+    const [globalLabelNameList, setGlobalLabelNameList] = useState<ClassInfo[] | undefined>(undefined);
 
     const [saveNotificationOpen, setSaveNotificationOpen] = useState(false);
 
@@ -235,8 +236,8 @@ function Marker({ fileUri, fileBlob, saveHandler, axiosInstance, options = defau
 
                 setGlobalLabelNameList([...newLabelNameList]);
             } else {
-                let labelNameList = combinedOption.labelNameList as LabelInformation[];
-                labelNameList.map((o: LabelInformation, i: number) => {
+                let labelNameList = combinedOption.labelNameList as ClassInfo[];
+                labelNameList.map((o: ClassInfo, i: number) => {
                     if (!o.color) {
                         o.color = allocateColor(i);
                     }
@@ -285,9 +286,16 @@ function Marker({ fileUri, fileBlob, saveHandler, axiosInstance, options = defau
                         !combinedOption.readOnly &&
                         <ToolNavigator pageLabelInfo={localLabelInfo} fitPoint={combinedOption.fitPoint} modifyOnly={combinedOption.modifyOnly} />
                     }
-                    <LabelNavigator open={open} labelMemoType={combinedOption.labelMemoType} labelMemoOptions={combinedOption.labelMemoOptions} manageLabels={combinedOption.manageLabels} onOpenChange={() => {
-                        setOpen(false);
-                    }} />
+                    <LabelNavigator 
+                        open={open} 
+                        labelMemoType={combinedOption.labelMemoType} 
+                        labelMemoOptions={combinedOption.labelMemoOptions} 
+                        manageLabels={combinedOption.manageLabels} 
+                        handleClassChanged={handleClassChanged}
+                        onOpenChange={() => {
+                            setOpen(false);
+                        }} 
+                    />
                 </Box>
                 <Confirm open={openConfirm} title={"로컬 데이터 확인"} content={"로컬에 저장된 데이터가 발견되었습니다. 불러오시겠습니까?"} onHandleOpen={onHandleOpen} onHandleConfirm={onHandleLocalLoad} />
                 <Snackbar

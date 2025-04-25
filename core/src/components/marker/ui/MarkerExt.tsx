@@ -3,7 +3,7 @@
  * @author Chanwoo Gwon, Yonsei Univ. Researcher, since 2020.05. ~
  * @Date 2021.10.27
  */
-import React, { Ref, useEffect, useLayoutEffect, useState } from 'react';
+import React, { Ref, useLayoutEffect, useState } from 'react';
 
 import 'ol/ol.css';
 import { PresetBox, PresetEllipse, PresetImageReader, PresetPolygon } from './addon/Presets';
@@ -18,7 +18,7 @@ function AddonContainer({children, onMount}) {
     return <>{children}</>
 }
 
-function MarkerExt({fileUri, fileBlob, saveHandler, children = [<PresetBox key={0}/>, <PresetPolygon key={1}/>, <PresetEllipse key={2}/>], axiosInstance, options}: MarkerProps, ref: Ref<MarkerState>) {
+function MarkerExt({fileUri, fileBlob, saveHandler, handleClassChanged, children = [<PresetBox key={0}/>, <PresetPolygon key={1}/>, <PresetEllipse key={2}/>], axiosInstance, options}: MarkerProps, ref: Ref<MarkerState>) {
     const [mounted, setMounted] = useState(false);
 
     return (
@@ -30,7 +30,7 @@ function MarkerExt({fileUri, fileBlob, saveHandler, children = [<PresetBox key={
                 </AddonContainer>
                 {
                     mounted &&
-                    <Marker ref={ref} fileUri={fileUri} fileBlob={fileBlob} saveHandler={saveHandler} axiosInstance={axiosInstance} options={options}/>
+                    <Marker ref={ref} fileUri={fileUri} fileBlob={fileBlob} saveHandler={saveHandler} handleClassChanged={handleClassChanged} axiosInstance={axiosInstance} options={options}/>
                 }
             </AddonProvider>
         </ReaderAddonProvider>

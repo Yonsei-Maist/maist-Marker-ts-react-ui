@@ -13,8 +13,8 @@ import VectorLayer from "ol/layer/Vector";
 function fitBox(extent: number[], geometry: Polygon) {
 
     var coords = geometry.getCoordinates()[0];
-                        
-    var adjustedCoords = coords.map(function(coord) {
+
+    var adjustedCoords = coords.map(function (coord) {
         var x = Math.max(extent[0], Math.min(coord[0], extent[2]));
         var y = Math.max(extent[1], Math.min(coord[1], extent[3]));
         return [x, y];
@@ -61,15 +61,15 @@ class BoxMark extends BaseMark {
         if (!this.feature) {
             return super.refresh();
         }
-        const polygon = this.feature.getGeometry() as Polygon;
-        this.location = polygon.getCoordinates();
-        const coordinates = polygon.getCoordinates()[0];
-        const xs = coordinates.map(coord => coord[0]);
-        const ys = coordinates.map(coord => coord[1]);
+
+        this.location = (this.feature.getGeometry() as Polygon).getCoordinates();
+        let location_one = this.location[0];
+        const xs = location_one.map(point => Math.abs(point[0]));
+        const ys = location_one.map(point => Math.abs(point[1]));
 
         const minX = Math.min(...xs);
-        const maxX = Math.max(...xs);
         const minY = Math.min(...ys);
+        const maxX = Math.max(...xs);
         const maxY = Math.max(...ys);
 
         const width = maxX - minX;
@@ -79,22 +79,19 @@ class BoxMark extends BaseMark {
 
         return {
             mark: this,
-            coco: [minX, minY, width, height],
+            coco: [minX, minY, width, height],  // x, y, w, h
             pascal_voc: [minX, minY, maxX, maxY],
             yolo: [centerX, centerY, width, height]
-        };
+        }
     }
 
     fromFormat(format: LabelFormat): void {
         if (format.coco) {
-            // coco format: [minX, minY, width, height]
             const minX = format.coco[0];
             const minY = format.coco[1];
-            const width = format.coco[2];
-            const height = format.coco[3];
-            const maxX = minX + width;
-            const maxY = minY + height;
-            // 좌표의 두 번째 값에 -를 붙여 y축 반전을 적용하고, 닫힌 다각형으로 생성
+            const maxX = format.coco[0] + format.coco[2];
+            const maxY = format.coco[1] + format.coco[3];
+
             this.location = [[
                 [minX, -minY],
                 [maxX, -minY],
@@ -103,11 +100,11 @@ class BoxMark extends BaseMark {
                 [minX, -minY]
             ]];
         } else if (format.pascal_voc) {
-            // pascal_voc format: [minX, minY, maxX, maxY]
-            const minX = format.pascal_voc[0];
-            const minY = format.pascal_voc[1];
-            const maxX = format.pascal_voc[2];
-            const maxY = format.pascal_voc[3];
+            const minX = format.coco[0];
+            const minY = format.coco[1];
+            const maxX = format.coco[2];
+            const maxY = format.coco[3];
+
             this.location = [[
                 [minX, -minY],
                 [maxX, -minY],
@@ -172,7 +169,7 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
             geometryFunction: createBox()
         });
 
-        this.draw.on("drawend", function(event) {
+        this.draw.on("drawend", function (event) {
             fitBox(layer.getExtent(), event.feature.getGeometry() as Polygon);
         });
 
