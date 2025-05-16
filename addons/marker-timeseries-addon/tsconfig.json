@@ -19,13 +19,9 @@
         "esModuleInterop": true,
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
-        "isolatedModules": true,
         "typeRoots": [
             "node_modules/@types"
-        ],
-        "paths": {
-          "@/*": ["./src/*"]
-        }
+        ]
     },
     "include": [
         "./src/api/**/*",
@@ -35,6 +31,6 @@
         "./src/index.tsx"
     ],
     "exclude": [
-        "node_modules"
+        "./node_modules"
     ]
 }

@@ -1,10 +1,10 @@
 import React, { } from "react";
 // import Marker from "./Marker";
 
-import { LabelMemoType, Marker, MarkerProps, PresetBox } from "@yonsei-maist/react-maist-marker";
+import { LabelMemoType, Marker, MarkerProps, PresetBox } from "../../core";
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
-import { DicomReader } from "@yonsei-maist/marker-dicom-addon";
+import { DicomReader } from "../../addons/marker-dicom-addon";
 
 interface MarkerContainerProps extends MarkerProps {
     reference: string;
@@ -47,7 +47,7 @@ export const Dicom: Story = {
         referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
         reference: "Image from Medimodel",
         fileUri: url,
-        options: { dcmWithCredentials: false, labelNameList: [], localSave: false }
+        options: { labelNameList: [], localSave: false }
     },
 };
 
@@ -56,7 +56,7 @@ export const DicomSetWindow: Story = {
         referenceUrl: "https://medimodel.com/sample-dicom-files/human_skull_2_dicom_file/",
         reference: "Image from Medimodel",
         fileUri: url,
-        options: { dcmWithCredentials: false, labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}", localSave: false }
+        options: { labelNameList: [], savedMemo: "{\"ww\": 40, \"wc\": 40}", localSave: false }
     },
 };
 
@@ -74,7 +74,6 @@ export const LabelName: Story = {
         reference: "Image from Medimodel",
         fileUri: url,
         options: {
-            dcmWithCredentials: false,
             labelNameList: [
                 "Normal",
                 "Abnormal"

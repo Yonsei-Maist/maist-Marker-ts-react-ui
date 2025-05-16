@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 // import Marker from "./Marker";
 
-import { Marker } from "@yonsei-maist/react-maist-marker"
+import { Marker } from "../../core"
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
 import fs from 'fs';

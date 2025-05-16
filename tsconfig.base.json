@@ -1,0 +1,8 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["core/src/*"]	// ← core의 실제 위치를 가리키도록 한 곳에만 정의
+		}
+	}
+}

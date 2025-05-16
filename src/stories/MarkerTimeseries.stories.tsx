@@ -1,10 +1,10 @@
 import React, { } from "react";
 // import Marker from "./Marker";
 
-import { LabelMemoType, Marker, MarkerProps, PresetBox } from "../../core";
+import { Marker, MarkerProps } from "@yonsei-maist/react-maist-marker";
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
-import { PdfReader } from "../../addons/marker-pdf-addon";
+import { TimeseriesReader } from "../../addons/marker-timeseries-addon";
 
 interface MarkerContainerProps extends MarkerProps {
     reference: string;
@@ -12,15 +12,14 @@ interface MarkerContainerProps extends MarkerProps {
 }
 
 const MarkerContainer = (args: MarkerContainerProps) => <div style={{ height: "800px", width: "100%" }}>
-    <div><a href={args.referenceUrl}>{args.reference}</a></div>
     <Marker {...args}>
-        <PresetBox />
-        <PdfReader/>
+        {/* <PresetBox /> */}
+        <TimeseriesReader/>
     </Marker>
 </div>;
 
 const meta: Meta<typeof MarkerContainer> = {
-    title: 'Markers PDF Addon',
+    title: 'Markers Time series Addon',
     component: MarkerContainer,
     // This component will have an automatically generated Autodocs entry: https://storybook.js.org/docs/writing-docs/autodocs
     tags: ['autodocs'],
@@ -35,8 +34,10 @@ type Story = StoryObj<typeof MarkerContainer>;
 
 export const PDF: Story = {
     args: {
-        referenceUrl: "http://www.africau.edu/images/default/sample.pdf",
-        reference: "PDF from africau",
-        fileUri: "https://dev-demo.connected-in.co.kr/example/sample.pdf",
+        fileUri: "text.txt",
+        fileBlob: new Blob(
+            ["1,2,3,4,5,6,7,8,9,10,11,12,13,14,15"],
+            { type: "text/plain" }
+        )
     },
-};
+};// comma‑separated series data → Blob
