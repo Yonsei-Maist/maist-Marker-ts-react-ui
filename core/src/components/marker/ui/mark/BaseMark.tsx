@@ -1,5 +1,6 @@
 import { Feature } from "ol";
 import { ClassInfo } from "../../context";
+import { Coordinate } from "ol/coordinate";
 
 export interface LabelFormat {
     mark?: BaseMark;

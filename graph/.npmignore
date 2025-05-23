@@ -10,3 +10,6 @@ config-overrides.js
 tsconfig.json
 storybook-static
 @types
+addons/
+tsconfig.tsbuildinfo
+!dist

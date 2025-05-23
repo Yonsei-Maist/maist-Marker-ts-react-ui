@@ -18,5 +18,9 @@
     "include": ["./src/**/*"], // storybook에서 core도 타입체크하려면 추가
     "exclude": [
         "node_modules"
+    ],
+    "references": [
+      { "path": "./core" },
+      { "path": "./graph" }
     ]
 }

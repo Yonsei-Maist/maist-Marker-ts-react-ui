@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "composite": true,
         "emitDeclarationOnly": true,
         "outDir": "./dist",
         "module": "esnext",
@@ -14,27 +15,30 @@
         "jsx": "react",
         "declaration": true,        
         "declarationMap": false,
-        "declarationDir": "./dist/types",
+        "declarationDir": "./dist/types",       
+        "rootDir": "./src",
         "moduleResolution": "node",
         "esModuleInterop": true,
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
         "isolatedModules": true,
         "typeRoots": [
-            "node_modules/@types"
+            "../node_modules/@types"
         ],
         "paths": {
           "@/*": ["./src/*"]
         }
     },
     "include": [
-        "./src/api/**/*",
         "./src/components/**/*",
+        "./src/constants/**/*",
         "./src/hooks/**/*",
+        "./src/lib/**/*",
         "./src/models/**/*",
         "./src/index.tsx"
     ],
     "exclude": [
-        "node_modules"
+        "../node_modules",
+        "./node_modules"
     ]
 }

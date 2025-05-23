@@ -1,0 +1,6 @@
+packages:
+  - 'core'
+  - 'addons/marker-dicom-addon'
+  - 'addons/marker-dzi-addon'
+  - 'addons/marker-pdf-addon'
+  - 'graph'

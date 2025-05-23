@@ -111,7 +111,7 @@ export class PolygonMark extends BaseMark {
             }
 
             this.location = [points];
-        } else if ("location" in format.mark) {
+        } else if (format.mark instanceof PolygonMark) {
             this.location = format.mark.location as Coordinate[][];
         }
     }

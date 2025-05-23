@@ -129,7 +129,7 @@ class BoxMark extends BaseMark {
                 [minX, -maxY],
                 [minX, -minY]
             ]];
-        } else if ("location" in format.mark) {
+        } else if (format.mark instanceof BoxMark) {
             // 이미 mark에 location이 포함된 경우 이를 사용
             this.location = format.mark.location as Coordinate[][];
         }

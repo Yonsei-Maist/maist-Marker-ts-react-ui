@@ -10,8 +10,8 @@ interface LongPressToggleButtonProps {
 }
 
 function LongPressToggleButton({ value, options, toolType, onClickOption }: LongPressToggleButtonProps) {
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
-    const buttonRef = useRef<HTMLButtonElement>();
+    const timerRef = useRef<NodeJS.Timeout>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     const [showOptions, setShowOptions] = useState(false);
     const [selectedAddon, setSelectedAddon] = useState(options[0]);
 

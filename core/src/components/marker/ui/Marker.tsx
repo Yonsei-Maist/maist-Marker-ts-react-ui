@@ -18,10 +18,10 @@ import { AxiosInstance, AxiosRequestHeaders } from 'axios';
 
 import 'ol/ol.css';
 import PageControl from './controls/PageControl';
-import { allocateColor } from '../../../lib/colorAllocator';
+import { allocateColor } from '@/lib/colorAllocator';
 import { LabelMemoType } from './controls/LabelMemoControl';
 import { ClassInfo } from '../context';
-import { TOOL_TYPE } from '../../../constants/tag';
+import { TOOL_TYPE } from '@/constants/tag';
 
 const LOCAL_STORAGE_KEY = "marker_label_list";
 const drawerWidth = 200;
@@ -90,7 +90,7 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
     const providerState = useRef(null as MapProviderState | null);
 
     const [open, setOpen] = useState(true);
-    const boxRef = useRef();
+    const boxRef = useRef(null);
     const [localLabelInfo, setLocalLabelInfo] = useState(combinedOption.savedLabelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [memo, setMemo] = useState(combinedOption.savedMemo);

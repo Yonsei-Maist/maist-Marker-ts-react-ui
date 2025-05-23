@@ -123,7 +123,7 @@ class EllipseMark extends BaseMark {
 
             this.first = [minX, -minY];
             this.last = [maxX, -maxY];
-        } else if ("first" in format.mark && "last" in format.mark) {
+        } else if (format.mark instanceof EllipseMark) {
             this.first = format.mark.first as Coordinate;
             this.last = format.mark.last as Coordinate;
         }

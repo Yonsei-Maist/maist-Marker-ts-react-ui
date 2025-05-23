@@ -38,7 +38,7 @@ interface MapProviderProps {
 };
 
 function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref: Ref<MapProviderState>) {
-    const labelRef = useRef<LabelProviderState>();
+    const labelRef = useRef<LabelProviderState>(null);
     const { readFile, makeLayer } = useReaderAddon();
 
     const [map, setMap] = useState<OlMap>();

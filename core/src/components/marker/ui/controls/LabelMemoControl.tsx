@@ -22,8 +22,8 @@ interface LabelMemoControlProps {
 
 function LabelMemoControl({icon, type = LabelMemoType.string, memo, memoList, splitText, onChangeMemo}: LabelMemoControlProps) {
     const [open, setOpen] = useState(false);
-    const ref = useRef();
-    const defaultSelectItemRef = useRef();
+    const ref = useRef(null);
+    const defaultSelectItemRef = useRef(null);
 
     const onHandleClick = (e: any) => {
         setOpen(!open);

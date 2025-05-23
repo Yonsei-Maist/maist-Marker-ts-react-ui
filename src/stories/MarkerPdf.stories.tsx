@@ -1,10 +1,10 @@
 import React, { } from "react";
 // import Marker from "./Marker";
 
-import { LabelMemoType, Marker, MarkerProps, PresetBox } from "../../core";
+import { LabelMemoType, Marker, MarkerProps, PresetBox } from "@yonsei-maist/react-maist-marker";
 import "ol/ol.css";
 import { Meta, StoryObj } from "@storybook/react";
-import { PdfReader } from "../../addons/marker-pdf-addon";
+import { PdfReader } from "../../addons/marker-pdf-addon/src";
 
 interface MarkerContainerProps extends MarkerProps {
     reference: string;
