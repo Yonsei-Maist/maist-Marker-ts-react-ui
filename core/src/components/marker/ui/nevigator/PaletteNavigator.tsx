@@ -4,6 +4,7 @@ import { Graticule } from "ol"
 import React, { ReactNode, useEffect, useRef, useState } from "react";
 import Confirm from "../controls/Confirm";
 import { useMap } from "../../provider/MarkerProvider";
+import { useCallback } from "react";
 
 const MENU = "MENU";
 const WHITE_BACKGROUND = "WHITE_BACKGROUND";
@@ -17,11 +18,12 @@ export interface PaletteNavigatorProps {
     onSaveServer: () => void;
 }
 
-function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNavigatorProps) {
-    const {map, isLoaded} = useMap();
+function PaletteNavigator({ children, root, onSaveLocal, onSaveServer }: PaletteNavigatorProps) {
+    const { map, isLoaded } = useMap();
     const [gridLayer, setGridLayer] = useState(undefined as undefined | Graticule);
     const [selectedList, setSelectedList] = useState([]);
     const [openConfirm, setOpenConfirm] = useState(false);
+    const [skipConfirm, setSkipConfirm] = useState(false);
 
     const [canvasSizeViewer, setCanvasSizeViewer] = useState(undefined as undefined | HTMLDivElement);
     const menuRef = useRef(undefined);
@@ -38,15 +40,20 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
         return index == -1;
     }
 
-    const onHandleSave = () => {
+    const onHandleSave = useCallback(() => {
         onSaveLocal();
-        setOpenConfirm(true);
-    };
+
+        if (skipConfirm) {
+            onSaveServer();
+        } else {
+            setOpenConfirm(true);
+        }
+    }, [skipConfirm, onSaveLocal, onSaveServer]);
 
     const onHandleWhiteBackground = () => {
         let exist = toggle(WHITE_BACKGROUND);
         if (root) {
-            const {current} = root;
+            const { current } = root;
             if (current) {
                 if (exist) {
                     current.style.backgroundColor = "black";
@@ -64,7 +71,7 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
         }
     };
 
-    const onHandleShowCanvasSize = ( ) => {
+    const onHandleShowCanvasSize = () => {
         let exist = toggle(SHOW_CANVAS_SIZE);
         if (root) {
             const { current } = root;
@@ -98,16 +105,21 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
         }
     };
 
-    const onHandleShortcuts = (e: globalThis.KeyboardEvent) => {
-        if (e.ctrlKey && e.key.toLowerCase() == "s" || e.metaKey && e.key.toLowerCase() == "s") {
+    const onHandleShortcuts = useCallback((e: globalThis.KeyboardEvent) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
             e.preventDefault();
             onHandleSave();
         }
-    }
+    }, [onHandleSave]);
 
-    const onHandleSaveServer = (confirm: boolean) => {
+    const onHandleSaveServer = (confirm: boolean, dontAskAgain: boolean) => {
         if (confirm) {
             onSaveServer();
+        }
+
+        if (dontAskAgain) {
+            localStorage.setItem("skipConfirmSaveServer", "true");
+            setSkipConfirm(true);
         }
     }
 
@@ -130,6 +142,13 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
         return () => {
             document.removeEventListener('keydown', onHandleShortcuts);
         }
+    }, [onHandleShortcuts]);
+
+    useEffect(() => {
+        const skip = localStorage.getItem("skipConfirmSaveServer");
+        if (skip === "true") {
+            setSkipConfirm(true);
+        }
     }, []);
 
     return <Box sx={{
@@ -144,20 +163,20 @@ function PaletteNavigator({children, root, onSaveLocal, onSaveServer}: PaletteNa
                 <Save />
             </ToggleButton>
             <ToggleButton size="small" value={WHITE_BACKGROUND} key={WHITE_BACKGROUND} onClick={onHandleWhiteBackground}>
-                <Wallpaper/>
+                <Wallpaper />
             </ToggleButton>
             <ToggleButton size="small" value={SHOW_GRID} key={SHOW_GRID} onClick={onHandleShowGrid}>
-                <GridOn/>
+                <GridOn />
             </ToggleButton>
             {/* <ToggleButton size="small" value={SIZE_MENU} key={SHOW_GRID} ref={sizeMenuRef}>
                 <PhotoSizeSelectSmall/>
             </ToggleButton> */}
             <ToggleButton size="small" value={SHOW_CANVAS_SIZE} key={SHOW_CANVAS_SIZE} onClick={onHandleShowCanvasSize}>
-                <StraightenTwoTone/>
+                <StraightenTwoTone />
             </ToggleButton>
             {children}
         </ToggleButtonGroup>
-        <Confirm title={"저장"} content={"저장하시겠습니까?"} open={openConfirm} onHandleOpen={()=> {setOpenConfirm(false);}} onHandleConfirm={onHandleSaveServer}/>
+        <Confirm title={"저장"} content={"저장하시겠습니까?"} open={openConfirm} onHandleOpen={() => { setOpenConfirm(false); }} onHandleConfirm={onHandleSaveServer} />
     </Box>
 }
 

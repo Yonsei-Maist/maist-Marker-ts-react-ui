@@ -25,7 +25,7 @@ const MarkerContainer = () => {
         <div><input type="file" onChange={handleFileChange} accept=".pdf,.dcm,image/*" /></div>
         {
             fileBlob &&
-            <Marker fileUri={fileName || ""} fileBlob={fileBlob} options={{fitPoint:false, savedLabelInfo: label}} ></Marker>
+            <Marker fileUri={fileName || ""} fileBlob={fileBlob} options={{fitPoint:false, savedLabelInfo: label, labelNameList: ["dd", "bb"]}} ></Marker>
         }
     </div>
 };

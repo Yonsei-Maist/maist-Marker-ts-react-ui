@@ -2,7 +2,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 import React, { useState } from "react";
 
 interface ConfirmProps {
-    onHandleConfirm: (confirm: boolean) => void;
+    onHandleConfirm: (confirm: boolean, dontAskAgain: boolean) => void;
     title: string;
     content: string;
     onHandleOpen: () => void;
@@ -10,10 +10,11 @@ interface ConfirmProps {
 }
 
 function Confirm({onHandleConfirm, title, content, onHandleOpen, open}: ConfirmProps) {
+    const [dontAskAgain, setDontAskAgain] = useState(false);
 
     const onHandleConfirmResult = (confirm: boolean) => {
         onHandleOpen();
-        onHandleConfirm(confirm);
+        onHandleConfirm(confirm, dontAskAgain);
     }
 
     return <Dialog
@@ -33,6 +34,16 @@ function Confirm({onHandleConfirm, title, content, onHandleOpen, open}: ConfirmP
             <DialogContentText id="alert-dialog-description">
                 {content}
             </DialogContentText>
+            <div style={{ marginTop: 8 }}>
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={dontAskAgain}
+                        onChange={(e) => setDontAskAgain(e.target.checked)}
+                    />
+                    다시 물어보지 않음
+                </label>
+            </div>
         </DialogContent>
         <DialogActions>
             <Button onClick={() => {onHandleConfirmResult(false);}}>아니오</Button>
