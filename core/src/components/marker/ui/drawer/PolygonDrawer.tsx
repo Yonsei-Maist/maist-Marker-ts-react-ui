@@ -1,6 +1,6 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
-import { primaryAction, platformModifierKeyOnly } from "ol/events/condition";
+import { primaryAction, platformModifierKeyOnly, altKeyOnly, singleClick } from "ol/events/condition";
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
@@ -163,6 +163,8 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
             },
             // 생성 시점이 아니라 이벤트 시점에 평가해야 단일 선택 상태에서 꼭짓점 추가가 동작한다.
             insertVertexCondition: () => select.getFeatures().getLength() == 1,
+            // Alt+클릭으로 정점 삭제 (정점 수 3개 미만이면 ol이 무시)
+            deleteCondition: (event) => altKeyOnly(event) && singleClick(event),
             features: select.getFeatures()
         });
 

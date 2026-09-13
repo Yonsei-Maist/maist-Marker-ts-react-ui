@@ -1,6 +1,5 @@
 import { Geometry, Point, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
-import { Vector } from "ol/source";
 import BasicDrawer from "./BaseDrawer";
 import { createBox } from 'ol/interaction/Draw';
 import { never, platformModifierKeyOnly, primaryAction } from "ol/events/condition";
@@ -10,48 +9,69 @@ import BaseMark, { LabelFormat } from "../mark/BaseMark";
 import { Coordinate } from "ol/coordinate";
 import VectorLayer from "ol/layer/Vector";
 
-function fitBox(extent: number[], geometry: Polygon) {
-
-    var coords = geometry.getCoordinates()[0];
-
-    var adjustedCoords = coords.map(function (coord) {
-        var x = Math.max(extent[0], Math.min(coord[0], extent[2]));
-        var y = Math.max(extent[1], Math.min(coord[1], extent[3]));
-        return [x, y];
-    });
-
-    geometry.setCoordinates([adjustedCoords]);
+/**
+ * 박스는 8개 핸들(꼭짓점 4 + 변 중점 4)을 가진 폴리곤으로 표현한다.
+ * 순서: TL, T, TR, R, BR, B, BL, L (+ 닫힘점)
+ */
+export function boxCoords(minX: number, minY: number, maxX: number, maxY: number): Coordinate[][] {
+    const midX = (minX + maxX) / 2;
+    const midY = (minY + maxY) / 2;
+    return [[
+        [minX, maxY], [midX, maxY], [maxX, maxY], [maxX, midY],
+        [maxX, minY], [midX, minY], [minX, minY], [minX, midY],
+        [minX, maxY]
+    ]];
 }
 
-export function calculateCenter(geometry: Polygon, point: number[]): any {
-    let coordinates = geometry.getCoordinates()[0];
-    let newCoord = [] as any;
-    let closest = [] as any;
-    let min = 100000000;
-    coordinates.forEach(function (coordinate) {
-        let distance = Math.sqrt(Math.pow((point[0] - coordinate[0]), 2) + Math.pow((point[1] - coordinate[1]), 2));
-        if (distance == Math.min(distance, min)) {
-            min = distance;
-            closest = coordinate;
-        }
-    });
+function extentOf(coords: Coordinate[]) {
+    const xs = coords.map(c => c[0]);
+    const ys = coords.map(c => c[1]);
+    return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
+}
 
-    coordinates.forEach(function (coordinate) {
-        let x, y;
-        if (coordinate[0] == closest[0] || coordinate[0] == point[0])
-            x = point[0];
-        else
-            x = coordinate[0];
+/** 임의의 폴리곤(createBox 결과 5점 등)을 8핸들 박스로 정규화 */
+export function normalizeBox(geometry: Polygon) {
+    const e = extentOf(geometry.getCoordinates()[0]);
+    geometry.setCoordinates(boxCoords(e.minX, e.minY, e.maxX, e.maxY));
+}
 
-        if (coordinate[1] == closest[1] || coordinate[1] == point[1])
-            y = point[1];
-        else
-            y = coordinate[1];
+function fitBox(extent: number[], geometry: Polygon) {
+    const e = extentOf(geometry.getCoordinates()[0]);
+    const minX = Math.max(extent[0], Math.min(e.minX, extent[2]));
+    const maxX = Math.max(extent[0], Math.min(e.maxX, extent[2]));
+    const minY = Math.max(extent[1], Math.min(e.minY, extent[3]));
+    const maxY = Math.max(extent[1], Math.min(e.maxY, extent[3]));
+    geometry.setCoordinates(boxCoords(minX, minY, maxX, maxY));
+}
 
-        newCoord.push([x, y]);
-    });
+/**
+ * 핸들 인덱스와 드래그 지점으로 새 박스를 계산한다 (8방향 리사이즈).
+ * 꼭짓점은 두 변, 변 중점은 한 변만 움직인다.
+ */
+export function resizeBox(origin: Coordinate[], handleIdx: number, point: Coordinate): Coordinate[][] {
+    let { minX, minY, maxX, maxY } = extentOf(origin);
+    const [px, py] = point;
+    switch (handleIdx % 8) {
+        case 0: minX = px; maxY = py; break; // TL
+        case 1: maxY = py; break;            // T
+        case 2: maxX = px; maxY = py; break; // TR
+        case 3: maxX = px; break;            // R
+        case 4: maxX = px; minY = py; break; // BR
+        case 5: minY = py; break;            // B
+        case 6: minX = px; minY = py; break; // BL
+        case 7: minX = px; break;            // L
+    }
+    return boxCoords(Math.min(minX, maxX), Math.min(minY, maxY), Math.max(minX, maxX), Math.max(minY, maxY));
+}
 
-    return newCoord;
+export function nearestHandle(origin: Coordinate[], point: Coordinate): number {
+    let best = 0;
+    let min = Infinity;
+    for (let i = 0; i < 8 && i < origin.length; i++) {
+        const d = Math.hypot(point[0] - origin[i][0], point[1] - origin[i][1]);
+        if (d < min) { min = d; best = i; }
+    }
+    return best;
 }
 
 class BoxMark extends BaseMark {
@@ -63,76 +83,37 @@ class BoxMark extends BaseMark {
         }
 
         this.location = (this.feature.getGeometry() as Polygon).getCoordinates();
-        let location_one = this.location[0];
-        const xs = location_one.map(point => Math.abs(point[0]));
-        const ys = location_one.map(point => Math.abs(point[1]));
-
-        const minX = Math.min(...xs);
-        const minY = Math.min(...ys);
-        const maxX = Math.max(...xs);
-        const maxY = Math.max(...ys);
-
-        const width = maxX - minX;
-        const height = maxY - minY;
-        const centerX = minX + width / 2;
-        const centerY = minY + height / 2;
+        const e = extentOf(this.location[0].map(p => [Math.abs(p[0]), Math.abs(p[1])]));
+        const width = e.maxX - e.minX;
+        const height = e.maxY - e.minY;
 
         return {
             mark: this,
-            coco: [minX, minY, width, height],  // x, y, w, h
-            pascal_voc: [minX, minY, maxX, maxY],
-            yolo: [centerX, centerY, width, height]
+            coco: [e.minX, e.minY, width, height],  // x, y, w, h
+            pascal_voc: [e.minX, e.minY, e.maxX, e.maxY],
+            yolo: [e.minX + width / 2, e.minY + height / 2, width, height]
         }
     }
 
     fromFormat(format: LabelFormat): void {
-        if (format.coco) {
-            const minX = format.coco[0];
-            const minY = format.coco[1];
-            const maxX = format.coco[0] + format.coco[2];
-            const maxY = format.coco[1] + format.coco[3];
-
-            this.location = [[
-                [minX, -minY],
-                [maxX, -minY],
-                [maxX, -maxY],
-                [minX, -maxY],
-                [minX, -minY]
-            ]];
+        let minX: number, minY: number, maxX: number, maxY: number;
+        if (format.coco && format.coco.length >= 4) {
+            [minX, minY] = format.coco;
+            maxX = format.coco[0] + format.coco[2];
+            maxY = format.coco[1] + format.coco[3];
         } else if (format.pascal_voc) {
-            const minX = format.pascal_voc[0];
-            const minY = format.pascal_voc[1];
-            const maxX = format.pascal_voc[2];
-            const maxY = format.pascal_voc[3];
-
-            this.location = [[
-                [minX, -minY],
-                [maxX, -minY],
-                [maxX, -maxY],
-                [minX, -maxY],
-                [minX, -minY]
-            ]];
+            [minX, minY, maxX, maxY] = format.pascal_voc;
         } else if (format.yolo) {
-            // yolo format: [centerX, centerY, width, height]
-            const centerX = format.yolo[0];
-            const centerY = format.yolo[1];
-            const width = format.yolo[2];
-            const height = format.yolo[3];
-            const minX = centerX - width / 2;
-            const maxX = centerX + width / 2;
-            const minY = centerY - height / 2;
-            const maxY = centerY + height / 2;
-            this.location = [[
-                [minX, -minY],
-                [maxX, -minY],
-                [maxX, -maxY],
-                [minX, -maxY],
-                [minX, -minY]
-            ]];
+            const [cx, cy, w, h] = format.yolo;
+            minX = cx - w / 2; maxX = cx + w / 2; minY = cy - h / 2; maxY = cy + h / 2;
         } else if (format.mark instanceof BoxMark) {
-            // 이미 mark에 location이 포함된 경우 이를 사용
             this.location = format.mark.location as Coordinate[][];
+            return;
+        } else {
+            return;
         }
+        // 화면 좌표는 y가 음수
+        this.location = boxCoords(minX, -maxY, maxX, -minY);
     }
 }
 
@@ -142,6 +123,7 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         let parsed = this.loadSaveData(BoxMark, saveData);
 
         let geo = new Polygon(parsed.location);
+        normalizeBox(geo);
         parsed.feature = new Feature(geo);
         parsed.feature.set(TOOL_MEMO, memo);
         parsed.feature.set(TOOL_TYPE, toolType);
@@ -170,7 +152,9 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
         });
 
         this.draw.on("drawend", function (event) {
-            fitBox(layer.getExtent(), event.feature.getGeometry() as Polygon);
+            const geo = event.feature.getGeometry() as Polygon;
+            normalizeBox(geo);
+            fitBox(layer.getExtent(), geo);
         });
 
         return this.draw;
@@ -188,12 +172,12 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
                 feature.get('features').forEach(function (modifyFeature: Feature) {
                     const modifyGeometry = modifyFeature.get('modifyGeometry');
                     if (modifyGeometry) {
-                        const geometry = feature.getGeometry() as Point;
-                        const point = geometry.getCoordinates();
-                        let coordinates = calculateCenter(modifyGeometry.geometry, point);
-
+                        const point = (feature.getGeometry() as Point).getCoordinates();
+                        if (modifyGeometry.handle === undefined) {
+                            modifyGeometry.handle = nearestHandle(modifyGeometry.origin, point);
+                        }
                         const newGeometry = modifyGeometry.geometry.clone() as Polygon;
-                        newGeometry.setCoordinates([coordinates]);
+                        newGeometry.setCoordinates(resizeBox(modifyGeometry.origin, modifyGeometry.handle, point));
                         modifyGeometry.geometry = newGeometry;
                     }
                 });
@@ -209,7 +193,12 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
                     let geometry = feature.getGeometry() as Polygon;
                     feature.set(
                         'modifyGeometry',
-                        { geometry: geometry.clone(), thumbFunc: () => { return geometry.getCoordinates(); } },
+                        {
+                            geometry: geometry.clone(),
+                            origin: geometry.getCoordinates()[0].map(c => [...c]),
+                            handle: undefined,
+                            thumbFunc: () => { return geometry.getCoordinates(); }
+                        },
                         true
                     );
                 }
@@ -235,4 +224,5 @@ class BoxDrawer extends BasicDrawer<BoxMark> {
     }
 }
 
+export { BoxMark };
 export default BoxDrawer;

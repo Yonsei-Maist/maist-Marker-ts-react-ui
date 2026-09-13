@@ -1,4 +1,4 @@
-import React, { Ref, forwardRef, useContext, useEffect, useImperativeHandle, useState } from "react";
+import React, { Ref, forwardRef, useContext, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { LabelContext, ClassInfo } from "../context";
 import BaseMark from "../ui/mark/BaseMark";
 import { Feature } from "ol";
@@ -8,19 +8,36 @@ import { MARK } from "@/constants/tag";
 export interface LabelProviderState {
     pageLabelList: Map<number, BaseMark[]>;
     labelNameList: ClassInfo[];
+    currentPageNo: number;
+    selectedLabel?: ClassInfo;
+    selectedFeatures?: Feature[];
+    setSelectedLabel: (label: ClassInfo) => void;
+    setSelectedFeatures: (features?: Feature[]) => void;
+    removeLabel: (feature: Feature) => void;
+    refreshLabels: () => void;
 }
 
 interface LabelProviderProps {
     labelNameList: ClassInfo[];
     children?: React.ReactNode;
+    /** 마크 목록(추가·삭제·수정·라벨 변경)이 바뀔 때 (1.4+) */
+    onLabelsChange?: () => void;
+    /** 현재 클래스 선택이 바뀔 때 (1.4+) */
+    onSelectedLabelChange?: (label?: ClassInfo) => void;
+    /** 선택된 도형이 바뀔 때 (1.4+) */
+    onSelectionChange?: (features?: Feature[]) => void;
 }
 
-function LabelProvider({ labelNameList: originLabelNameList, children }: LabelProviderProps, ref:Ref<LabelProviderState>) {
+function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsChange, onSelectedLabelChange, onSelectionChange }: LabelProviderProps, ref:Ref<LabelProviderState>) {
     const [pageLabelList, setPageLabelList] = useState(new Map<number, BaseMark[]>());
     const [currentPageNo, setCurrentPageNo] = useState(1);
     const [labelNameList, setLabelNameList] = useState(originLabelNameList);
     const [selectedFeatures, setLocalSelectedFeatures] = useState<Feature[]>();
     const [selectedLabel, setSelectedLabel] = useState<ClassInfo>();
+
+    // 콜백은 ref로 잡아 두어 이펙트 의존성에 넣지 않아도 최신 것을 호출한다.
+    const callbacks = useRef({ onLabelsChange, onSelectedLabelChange, onSelectionChange });
+    callbacks.current = { onLabelsChange, onSelectedLabelChange, onSelectionChange };
 
     function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
         let localPageLabelList = pageLabelList
@@ -43,7 +60,8 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
                 let labelInfo = pageLabelInfo[i];
                 let markList = [] as BaseMark[];
                 for (let j = 0; j < labelInfo.length; j++) {
-                    markList.push(converter(labelInfo[j]));
+                    const mark = converter(labelInfo[j]);
+                    if (mark) markList.push(mark);
                 }
 
                 localPageLabelList.set(i + 1, markList);
@@ -51,7 +69,6 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
         }
 
         setPageLabelList(new Map(localPageLabelList));
-        // refresh();
     }
 
     function setSelectedFeatures(features?: Feature[]) {
@@ -60,7 +77,6 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
 
     function addLabel(mark: BaseMark) {
         // 새 도형은 현재 선택된 클래스를 기본 라벨로 갖는다.
-        // (예전에는 LabelNavigator가 렌더 중에 대입했는데, 렌더 중 상태 변형은 React 규칙 위반이다.)
         if (!mark.label && selectedLabel) {
             mark.label = selectedLabel;
             mark.feature?.set(MARK, mark);
@@ -87,7 +103,8 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
     }
 
     function refreshLabels() {
-        setPageLabelList(new Map(pageLabelList));
+        // 함수형 갱신: 오래된 클로저(ToolNavigator의 ol 이벤트 핸들러)에서 호출해도 안전하다.
+        setPageLabelList(prev => new Map(prev));
     }
 
     useEffect(() => {
@@ -98,10 +115,29 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
         setLabelNameList(originLabelNameList);
     }, [originLabelNameList]);
 
+    useEffect(() => {
+        callbacks.current.onLabelsChange?.();
+    }, [pageLabelList]);
+
+    useEffect(() => {
+        callbacks.current.onSelectedLabelChange?.(selectedLabel);
+    }, [selectedLabel]);
+
+    useEffect(() => {
+        callbacks.current.onSelectionChange?.(selectedFeatures);
+    }, [selectedFeatures]);
+
     useImperativeHandle(ref, () => {
         return {
-            pageLabelList: pageLabelList,
-            labelNameList: labelNameList
+            pageLabelList,
+            labelNameList,
+            currentPageNo,
+            selectedLabel,
+            selectedFeatures,
+            setSelectedLabel,
+            setSelectedFeatures,
+            removeLabel,
+            refreshLabels
         } as LabelProviderState;
     });
 
@@ -116,7 +152,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
 export const useLabel = () => {
     const context = useContext(LabelContext);
     if (!context) {
-        throw new Error('useAddon must be used within an AddonProvider');
+        throw new Error('useLabel must be used within a LabelProvider');
     }
 
     return context;

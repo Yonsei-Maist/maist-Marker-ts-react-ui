@@ -160,6 +160,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                         <LabelMemoControl icon={<Edit />} type={labelMemoType} memoList={labelMemoOptions} memo={o.memo} onChangeMemo={(memo: string) => {
                                             o.memo = memo;
                                             setSelectedFeatures(selectedFeatures);
+                                            refreshLabels();
                                         }} />
                                     </Box>
                                 </Stack>

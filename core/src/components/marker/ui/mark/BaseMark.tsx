@@ -4,15 +4,34 @@ import { Coordinate } from "ol/coordinate";
 
 export interface LabelFormat {
     mark?: BaseMark;
+    /**
+     * 도구별 좌표 (fitPoint=true면 0~1 비율, false면 원본 픽셀)
+     * - Box / Cuboid(앞면) : [x, y, w, h]
+     * - Polygon / Polyline : [x1, y1, x2, y2, ...]
+     * - Keypoint           : [x, y]
+     * - Mask               : [] (mask 필드 사용)
+     */
     coco: number[];
     pascal_voc?: number[];
     yolo?: number[];
+    /** Keypoint 순번, Instance Segmentation 인스턴스 번호 (1.5+) */
+    order?: number;
+    /** Cuboid 깊이 오프셋 [dx, dy] (coco와 같은 단위) (1.5+) */
+    depth?: number[];
+    /** Segmentation 마스크 PNG data URL (원본 픽셀 크기) (1.5+) */
+    mask?: string;
+    /** 마스크 캔버스 크기 [w, h] (원본 픽셀) (1.5+) */
+    maskSize?: number[];
 }
 
 export interface LabelInfo {
     data: string | LabelFormat;
     toolType: string;
     label: string;
+    /** 마크 식별자. 저장 결과에 포함되며, savedLabelInfo로 넘기면 같은 id로 복원된다. (1.4+) */
+    id?: string;
+    /** 마크 메모 (1.4+) */
+    memo?: string;
 }
 
 class BaseMark {

@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.4.1-snapshot (개발 중, dist-tag `snapshot`)
+
+정식 릴리스 전까지 `1.4.1-snapshot.N`으로만 올린다. `latest`는 1.3.3.
+
+### 8종 어노테이션 타입
+
+기술협상 확정본의 8종 어노테이션 타입을 모두 지원한다. (⑦ Classification은 호스트가 마킹 존재 여부로 파생)
+
+### 추가
+
+- **① Bounding Box**: 8방향 핸들(꼭짓점 4 + 변 중점 4) 리사이즈. 박스는 8점 폴리곤으로 표현되며 기존 5점 데이터는 로드 시 정규화된다. 좌표 수치 직접 입력은 `setMarkData(id, format)`.
+- **② Polygon**: 정점 추가(단일 선택 시 변 클릭), 이동, Alt+클릭 삭제. 자석 스냅은 Snap 인터랙션으로 유지.
+- **③ Polyline**: 정점 추가·삭제 조건 동일 적용.
+- **④ Keypoint** (`PresetKeypoint`, id `Keypoint`): 단일/다중 포인트, 같은 클래스 안에서 순번 자동 부여·표시, `setMarkOrder`로 변경. 저장 `coco=[x,y], order`.
+- **⑤ Semantic Segmentation** (`PresetSemanticSegmentation`, id `SemanticMask`): 원본 픽셀 해상도 마스크, 브러시/소거, 브러시 크기, 투명도. 클래스당 마스크 1장. 저장 `mask`(PNG data URL), `maskSize`.
+- **⑥ Instance Segmentation** (`PresetInstanceSegmentation`, id `InstanceMask`): 인스턴스별 마스크·번호(`order`) 자동 부여, 중첩 허용(그린 순서대로 합성), 「새 인스턴스」/`newInstance()`, 패널에서 인스턴스 선택 후 이어 칠하기.
+- **⑧ Cuboid** (`PresetCuboid`, id `Cuboid`, 확장 옵션): 앞면 박스 + 깊이 오프셋의 2.5D 입력. 앞면 꼭짓점은 리사이즈, 뒷면 꼭짓점은 깊이 변경. 저장 `coco`(앞면), `depth=[dx,dy]`. 3D 확장 시 `depth`를 z 값으로 대체할 수 있도록 분리.
+- 브러시 설정 UI: 마스크 도구 활성 시 툴바 옆에 브러시/소거, 크기, 투명도, 새 인스턴스. ref로도 제어(`getMaskSettings`, `setMaskSettings`, `newInstance`).
+- `LabelFormat`에 `order`, `depth`, `mask`, `maskSize` 추가. 저장·로드 시 `depth`도 비율 변환된다.
+- 클래스 변경 시 마스크는 새 클래스 색으로 재채색된다.
+- export: `BoxDrawer`, `BoxMark`, `KeypointDrawer`, `CuboidDrawer`, `MaskDrawer`, `MaskMark`, `MaskSettings`, 신규 프리셋 4종.
+
+### 내부
+
+- 맵 객체에 `DRAWER_MAP`, `FIT_POINT`, `SELECTED_LABEL`, `MASK_LAYER`, `MASK_SETTINGS`, `CURRENT_INSTANCE`를 실어 드로어와 프로바이더가 공유한다.
+- 마스크는 벡터 레이어 아래의 ImageCanvas 레이어가 합성한다. 마스크 마크의 벡터 지오메트리는 선택용 대표점뿐이다.
+
+### 호스트 UI 연동 API
+
+호스트 UI와 편집기를 연동하기 위한 API 추가. 기존 API는 그대로 동작한다.
+
+### 추가
+
+- **`onChange(labelList)`**: 마크 추가·수정(드래그/정점 편집/이동)·삭제, 라벨·메모 변경 시마다 현재 목록을 전달한다. 저장 버튼과 무관하게 호스트가 실시간으로 상태를 파생할 수 있다.
+- **`onSelectedLabelChange`, `onSelectionChange(ids)`, `onToolChange(tool)`** 콜백.
+- **`LabelInfo.id`, `LabelInfo.memo`**: 저장 결과와 `getLabelList()`에 마크 id가 포함되고, `savedLabelInfo`에 id를 넣으면 같은 id로 복원된다.
+- **ref 메서드**: `getSelectedLabel`, `setSelectedLabel(name)`, `setTool(id | '')`, `getSelectedIds`, `selectMark`, `unselectMark`, `clearSelection`, `removeMark`, `setMarkLabel`, `setMarkMemo`. 호스트 패널이 라이브러리 드로어를 대체할 수 있다.
+- **옵션**: `hideLabelNavigator`, `hidePalette`, `confirmOnSave`(기본 true), `showSaveNotification`(기본 true), `defaultTool`.
+- **`PresetPolyline`**: 측정 표시 없는 개곡선 라벨 도구 (id `Polyline`). 확정본의 ③ Polyline 타입.
+- **`PresetPolygon({ measure: false })`**: Length/Area 없이 Polygon만 등록 (id `Polygon`).
+- **export**: `useLabel`, `useMap`, `LengthDrawer`, `PolylineDrawer`, `LengthMark`, `MarkerOptions`, `LabelFormat`.
+
+### 수정
+
+- `refreshLabels`가 함수형 갱신을 쓰므로 ol 이벤트 핸들러(오래된 클로저)에서 호출해도 안전하다.
+- 초기 선택 모드 진입 시 `onToolChange`를 호출하지 않는다 (사용자 조작만 알린다).
+
 ## 1.3.3
 
 안정화 릴리스. 공개 API는 유지하며 버그와 전역 부작용만 고쳤다.

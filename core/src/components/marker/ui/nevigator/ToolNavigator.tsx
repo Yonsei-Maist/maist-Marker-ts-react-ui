@@ -28,7 +28,12 @@ import { useMap } from '../../provider/MarkerProvider';
 import { useLabel } from '../../provider/LabelProvider';
 import { useAddon } from '../../provider/AddonProvider';
 import { DrawObject } from '@/lib/CanvasDrawer';
-import { DRAW_OBJECT, IS_DRAWER_VECTOR, MAP_HEIGHT, MAP_WIDTH, MARK, TOOL_TYPE } from "@/constants/tag";
+import { DRAWER_MAP, DRAW_OBJECT, FIT_POINT, IS_DRAWER_VECTOR, MAP_HEIGHT, MAP_WIDTH, MARK, MASK_LAYER, SELECTED_LABEL, TOOL_TYPE } from "@/constants/tag";
+import ImageLayer from "ol/layer/Image";
+import ImageCanvasSource from "ol/source/ImageCanvas";
+import MaskDrawer, { createMaskCanvasFunction, getMaskSettings } from "../drawer/MaskDrawer";
+import { Button, Slider, Stack, Typography } from "@mui/material";
+import { CURRENT_INSTANCE } from "@/constants/tag";
 
 enum Mode {
     Draw,
@@ -39,6 +44,10 @@ export interface ToolNavigatorProps {
     pageLabelInfo?: LabelInfo[][];
     fitPoint: boolean;
     modifyOnly?: boolean;
+    /** 호스트가 요청한 도구 ('' = 선택 모드). 값이 바뀔 때마다 적용된다. (1.4+) */
+    toolRequest?: { tool: string; seq: number };
+    /** 사용자가 툴바에서 도구를 바꿨을 때 (1.4+) */
+    onToolChange?: (tool: string) => void;
 };
 
 export interface ToolContext {
@@ -51,9 +60,15 @@ export interface ToolContext {
     toolType: string;
 }
 
-function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorProps) {
+function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToolChange }: ToolNavigatorProps) {
     const { map, isLoaded, findVectorLayer, findMainLayer } = useMap();
-    const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, labelNameList, addLabel, removeLabel } = useLabel();
+    const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, labelNameList, addLabel, removeLabel, refreshLabels, selectedLabel } = useLabel();
+    // 드로어(브러시·키포인트)가 현재 클래스를 읽을 수 있도록 맵에 실어 둔다
+    useEffect(() => {
+        if (map) map.set(SELECTED_LABEL, selectedLabel);
+    }, [map, selectedLabel]);
+    // 브러시 설정 UI 갱신용
+    const [maskSettingsVersion, setMaskSettingsVersion] = useState(0);
     const { addons } = useAddon();
 
     const context = useRef({ drawerMap: new Map<string, BaseDrawer<BaseMark>>(), toolType: "" } as ToolContext);
@@ -100,8 +115,17 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                 addLabel(mark);
             });
 
+            // 브러시 스트로크가 끝나면 목록을 갱신해 onChange가 발화되도록 한다
+            (draw as any).on('strokeend', () => refreshLabels());
+
             value.createModify(layer, select);
         });
+
+        const map_ = layer.get('map') ?? map;
+        if (map_) {
+            map_.set(DRAWER_MAP, drawerMap);
+            map_.set(FIT_POINT, fitPoint);
+        }
     }
 
     function getDrawer(source: Vector, select: Select): BaseDrawer<BaseMark> | undefined {
@@ -143,6 +167,8 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                             }
 
                             data = {
+                                ...item.data,
+                                depth: item.data.depth ? fitPoints(iW, iH, item.data.depth, false, fitPoint) : undefined,
                                 coco: item.data.coco ? fitPoints(iW, iH, item.data.coco, false, fitPoint) : undefined,
                                 pascal_voc: item.data.pascal_voc ? fitPoints(iW, iH, item.data.pascal_voc, false, fitPoint) : undefined,
                                 yolo: item.data.yolo ? fitPoints(iW, iH, item.data.yolo, false, fitPoint) : undefined
@@ -154,7 +180,9 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                         mark = drawer.createMark(data, toolType);
 
                         mark.label = labelNameList.find(o => o.labelName == item.label);
-                        mark.feature.setId(uuidv4());
+                        mark.memo = item.memo;
+                        // 저장 데이터에 id가 있으면 그대로 복원해 호스트가 같은 id로 추적할 수 있게 한다.
+                        mark.feature.setId(item.id || uuidv4());
                         mark.feature.set(MARK, mark);
 
                         return mark;
@@ -166,15 +194,36 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
         }
     }
 
+    function applyTool(type: string) {
+        if (type === "") {
+            setToolType("");
+            setToolMode(Mode.Select);
+        } else {
+            setToolMode(Mode.Draw);
+            setToolType(type);
+        }
+    }
+
     function onModeButtonClickListener(type: Mode) {
         setToolType("");
         setToolMode(type);
+        onToolChange?.("");
     }
 
     function onToolButtonClickListener(type: string) {
         setToolMode(Mode.Draw);
         setToolType(type);
+        onToolChange?.(type);
     }
+
+    // 호스트의 도구 변경 요청 (초기값은 맵 로드 이펙트에서 적용하고, 이후 변경만 여기서 처리)
+    const toolRequestRef = useRef(toolRequest);
+    toolRequestRef.current = toolRequest;
+    useEffect(() => {
+        if (toolRequest && toolRequest.seq > 0 && map && isLoaded) {
+            applyTool(toolRequest.tool);
+        }
+    }, [toolRequest, map, isLoaded]);
 
     function checkActive() {
         if (toolMode == Mode.Select)
@@ -316,6 +365,21 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                 });
 
                 map.addLayer(layer);
+
+                // 세그먼테이션 마스크 합성 레이어 (벡터 레이어 아래)
+                const maskLayer = new ImageLayer({
+                    source: new ImageCanvasSource({
+                        canvasFunction: createMaskCanvasFunction(map, layer),
+                        ratio: 1
+                    })
+                });
+                maskLayer.setExtent(extent);
+                map.set(MASK_LAYER, maskLayer);
+                map.addLayer(maskLayer);
+                // 벡터 레이어가 위에 오도록 순서 조정
+                map.removeLayer(layer);
+                map.addLayer(layer);
+
                 addCustomInteraction("select", select);
 
                 translate.setActive(false);
@@ -327,10 +391,15 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                 addCustomInteraction("removeModify", removeModify);
 
                 drawerMap.forEach((value, key) => {
-                    if (key != "")
-                        addCustomInteraction(key + "_modify", value.getModify());
+                    if (key != "") {
+                        const modify = value.getModify();
+                        // 도형 수정이 끝나면 목록을 갱신해 onChange가 발화되도록 한다.
+                        modify.on('modifyend', () => refreshLabels());
+                        addCustomInteraction(key + "_modify", modify);
+                    }
                 });
 
+                translate.on('translateend', () => refreshLabels());
                 addCustomInteraction("translate", translate);
 
                 drawerMap.forEach((value, key) => {
@@ -375,7 +444,9 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                 }
             }
 
-            onModeButtonClickListener(Mode.Select);
+            // 초기 도구: 호스트가 요청한 것(defaultTool)이 있으면 그것, 없으면 선택 모드.
+            // (사용자 조작이 아니므로 onToolChange는 부르지 않는다)
+            applyTool(toolRequestRef.current?.tool ?? "");
         }
     }, [map, isLoaded]);
 
@@ -445,7 +516,40 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
         }
     }, [toolMode]);
 
+    const activeDrawer = context.current.drawerMap.get(toolType);
+    const maskActive = toolMode == Mode.Draw && activeDrawer instanceof MaskDrawer;
+    const maskSettings = map ? getMaskSettings(map) : undefined;
+    const updateMask = (patch: Partial<typeof maskSettings>) => {
+        if (!map || !maskSettings) return;
+        Object.assign(maskSettings, patch);
+        map.get(MASK_LAYER)?.getSource()?.changed();
+        setMaskSettingsVersion(v => v + 1);
+    };
+    void maskSettingsVersion;
+
     return (
+        <>
+        {
+            maskActive && maskSettings &&
+            <Box position={"absolute"} left={"75px"} top={"15px"} sx={{ background: "white", borderRadius: 1, p: 1.5, width: 190, boxShadow: 1 }}>
+                <Stack spacing={0.5}>
+                    <ToggleButtonGroup size="small" exclusive value={maskSettings.mode} onChange={(_, v) => v && updateMask({ mode: v })}>
+                        <ToggleButton value="paint" sx={{ px: 1.5, py: 0.3, fontSize: 12 }}>브러시</ToggleButton>
+                        <ToggleButton value="erase" sx={{ px: 1.5, py: 0.3, fontSize: 12 }}>소거</ToggleButton>
+                    </ToggleButtonGroup>
+                    <Typography variant="caption">크기 {maskSettings.size}px</Typography>
+                    <Slider size="small" min={1} max={200} value={maskSettings.size} onChange={(_, v) => updateMask({ size: v as number })} />
+                    <Typography variant="caption">투명도 {Math.round(maskSettings.opacity * 100)}%</Typography>
+                    <Slider size="small" min={0.1} max={1} step={0.05} value={maskSettings.opacity} onChange={(_, v) => updateMask({ opacity: v as number })} />
+                    {
+                        (activeDrawer as MaskDrawer).instance &&
+                        <Button size="small" variant="outlined" onClick={() => { map?.set(CURRENT_INSTANCE, undefined); setMaskSettingsVersion(v => v + 1); }}>
+                            새 인스턴스
+                        </Button>
+                    }
+                </Stack>
+            </Box>
+        }
         <Box position={"absolute"} left={"15px"} top={"15px"}>
             <ToggleButtonGroup value={checkActive()} orientation='vertical' sx={{ background: "white" }}>
                 <ToggleButton value={Mode.Select} key={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
@@ -474,6 +578,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                 }
             </ToggleButtonGroup>
         </Box>
+        </>
     );
 }
 

@@ -12,7 +12,8 @@ import { Box, Button, IconButton, Snackbar, styled } from '@mui/material';
 import { ArrowCircleLeft, Close } from '@mui/icons-material';
 import PaletteNavigator from './nevigator/PaletteNavigator';
 import BaseDrawer from './drawer/BaseDrawer';
-import BaseMark, { LabelInfo } from './mark/BaseMark';
+import BaseMark, { LabelFormat, LabelInfo } from './mark/BaseMark';
+import { MaskSettings } from './drawer/MaskDrawer';
 import Confirm from './controls/Confirm';
 import { AxiosInstance, AxiosRequestHeaders } from 'axios';
 
@@ -46,9 +47,34 @@ const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !==
 }));
 
 export interface MarkerState {
-    /** 페이지별 라벨 목록 (단일 이미지도 페이지 1개짜리 배열) */
+    /** 페이지별 라벨 목록 (단일 이미지도 페이지 1개짜리 배열). 각 항목에 id가 포함된다. */
     getLabelList: () => LabelInfo[][];
     getLabelNameList: () => ClassInfo[];
+    /* ---- 1.4+: 호스트 UI 연동용 ---- */
+    /** 현재 클래스 */
+    getSelectedLabel: () => ClassInfo | undefined;
+    /** 현재 클래스를 이름으로 지정. 목록에 없으면 false */
+    setSelectedLabel: (labelName: string) => boolean;
+    /** 도구 지정. 프리셋 id('Box', 'Polygon', 'Polyline', ...) 또는 ''(선택 모드) */
+    setTool: (tool: string) => void;
+    /** 선택된 마크 id 목록 */
+    getSelectedIds: () => string[];
+    selectMark: (id: string, exclusive?: boolean) => void;
+    unselectMark: (id: string) => void;
+    clearSelection: () => void;
+    removeMark: (id: string) => void;
+    setMarkLabel: (id: string, labelName: string) => boolean;
+    setMarkMemo: (id: string, memo: string) => void;
+    /* ---- 1.5+: 8종 어노테이션 타입 지원 ---- */
+    /** 좌표 수치 직접 입력. 저장 형식(getLabelList의 data)과 같은 단위 */
+    setMarkData: (id: string, data: LabelFormat) => boolean;
+    /** Keypoint 순번 / 인스턴스 번호 변경 */
+    setMarkOrder: (id: string, order: number) => void;
+    /** 세그먼테이션 브러시 설정 */
+    getMaskSettings: () => MaskSettings | undefined;
+    setMaskSettings: (patch: Partial<MaskSettings>) => void;
+    /** 다음 브러시 스트로크가 새 인스턴스를 만들도록 */
+    newInstance: () => void;
 }
 
 export interface MarkerProps {
@@ -59,6 +85,15 @@ export interface MarkerProps {
     children?: ReactNode;
     saveHandler?: (labelList: LabelInfo[][], memo?: string, callback?: () => void) => void;
     handleClassChanged?: (classInfoList: ClassInfo[]) => void;
+    /* ---- 1.4+ ---- */
+    /** 마크가 추가·수정·삭제되거나 라벨/메모가 바뀔 때마다 현재 목록을 전달 (저장과 무관) */
+    onChange?: (labelList: LabelInfo[][]) => void;
+    /** 현재 클래스 선택이 바뀔 때 */
+    onSelectedLabelChange?: (label?: ClassInfo) => void;
+    /** 선택된 마크 id 목록이 바뀔 때 */
+    onSelectionChange?: (ids: string[]) => void;
+    /** 사용자가 툴바에서 도구를 바꿨을 때 ('' = 선택 모드) */
+    onToolChange?: (tool: string) => void;
 };
 
 export interface MarkerOptions {
@@ -75,6 +110,17 @@ export interface MarkerOptions {
     paletteButtons?: ReactNode;
     fitPoint?: boolean;
     modifyOnly?: boolean;
+    /* ---- 1.4+ ---- */
+    /** 우측 라벨 드로어(클래스 선택·마크 목록)를 렌더링하지 않음. 호스트가 자체 패널을 쓸 때 */
+    hideLabelNavigator?: boolean;
+    /** 상단 팔레트(저장·배경·격자·크기)를 렌더링하지 않음 */
+    hidePalette?: boolean;
+    /** 저장 버튼/Ctrl+S 시 확인 대화상자 표시 (기본 true) */
+    confirmOnSave?: boolean;
+    /** 저장 완료 스낵바 표시 (기본 true) */
+    showSaveNotification?: boolean;
+    /** 로드 직후 활성화할 도구 (프리셋 id). 기본은 선택 모드 */
+    defaultTool?: string;
 }
 
 const defaultOptions: MarkerOptions = {
@@ -83,14 +129,26 @@ const defaultOptions: MarkerOptions = {
     labelNameList: [],
     manageLabels: true,
     fitPoint: true,
-    modifyOnly: false
+    modifyOnly: false,
+    hideLabelNavigator: false,
+    hidePalette: false,
+    confirmOnSave: true,
+    showSaveNotification: true
 }
 
-function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChanged, options = defaultOptions }: MarkerProps, ref: Ref<MarkerState>) {
+function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChanged, options = defaultOptions, onChange, onSelectedLabelChange, onSelectionChange, onToolChange }: MarkerProps, ref: Ref<MarkerState>) {
     const combinedOption = { ...defaultOptions, ...options }
     const providerState = useRef(null as MapProviderState | null);
 
-    const [open, setOpen] = useState(true);
+    // 콜백 최신 참조 (이펙트/핸들에서 stale closure 방지)
+    const callbacks = useRef({ onChange, onSelectedLabelChange, onSelectionChange, onToolChange });
+    callbacks.current = { onChange, onSelectedLabelChange, onSelectionChange, onToolChange };
+
+    const [toolRequest, setToolRequest] = useState<{ tool: string; seq: number } | undefined>(
+        combinedOption.defaultTool !== undefined ? { tool: combinedOption.defaultTool, seq: 0 } : undefined
+    );
+
+    const [open, setOpen] = useState(!combinedOption.hideLabelNavigator);
     const boxRef = useRef(null);
     // OpenLayers 맵 컨테이너. 고정 id 대신 ref를 넘겨 다중 인스턴스를 허용한다.
     const mapTargetRef = useRef<HTMLDivElement>(null);
@@ -123,8 +181,10 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                     pageLabelList_.push({
                         data: toObject ? markData : JSON.stringify(markData),
                         toolType: item.feature.get(TOOL_TYPE),
-                        label: item.label.labelName
-                    });
+                        label: item.label?.labelName,
+                        id: String(item.feature.getId()),
+                        memo: item.memo
+                    } as LabelInfo);
                 }
 
                 labelList.push(pageLabelList_);
@@ -148,12 +208,13 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
         let labels = getLabel(true);
         let memo = getMemo();
 
+        const notify = () => { if (combinedOption.showSaveNotification) setSaveNotificationOpen(true); };
         if (saveHandler) {
-            saveHandler(labels, memo, () => { setSaveNotificationOpen(true); });
+            saveHandler(labels, memo, notify);
             localStorage.removeItem(storage_key);
             localStorage.removeItem(storage_memo_key);
         } else {
-            setSaveNotificationOpen(true);
+            notify();
         }
     };
 
@@ -259,8 +320,23 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
             return getLabel(true);
         },
         getLabelNameList: () => {
-            return providerState.current.labelNameList()
-        }
+            return providerState.current?.labelNameList() ?? [];
+        },
+        getSelectedLabel: () => providerState.current?.selectedLabel(),
+        setSelectedLabel: (labelName: string) => providerState.current?.setSelectedLabel(labelName) ?? false,
+        setTool: (tool: string) => setToolRequest(prev => ({ tool, seq: (prev?.seq ?? 0) + 1 })),
+        getSelectedIds: () => providerState.current?.selectedIds() ?? [],
+        selectMark: (id: string, exclusive?: boolean) => providerState.current?.selectMark(id, exclusive),
+        unselectMark: (id: string) => providerState.current?.unselectMark(id),
+        clearSelection: () => providerState.current?.clearSelection(),
+        removeMark: (id: string) => providerState.current?.removeMark(id),
+        setMarkLabel: (id: string, labelName: string) => providerState.current?.setMarkLabel(id, labelName) ?? false,
+        setMarkMemo: (id: string, memoText: string) => providerState.current?.setMarkMemo(id, memoText),
+        setMarkData: (id: string, data: LabelFormat) => providerState.current?.setMarkData(id, data) ?? false,
+        setMarkOrder: (id: string, order: number) => providerState.current?.setMarkOrder(id, order),
+        getMaskSettings: () => providerState.current?.getMaskSettings(),
+        setMaskSettings: (patch: Partial<MaskSettings>) => providerState.current?.setMaskSettings(patch),
+        newInstance: () => providerState.current?.newInstance()
     } as MarkerState));
 
     if (globalLabelNameList)
@@ -276,30 +352,48 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                 withCredentials={combinedOption.withCredentials}
                 memo={memo}
                 targetRef={mapTargetRef}
+                onLabelsChange={() => callbacks.current.onChange?.(getLabel(true))}
+                onSelectedLabelChange={(label) => callbacks.current.onSelectedLabelChange?.(label)}
+                onSelectionChange={(features) => callbacks.current.onSelectionChange?.((features ?? []).map(f => String(f.getId())))}
             >
                 <PageControl />
                 <Box ref={boxRef} height={"100%"} position={"relative"}>
-                    <MarkerMain ref={mapTargetRef} open={open} />
-                    <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
-                        <ArrowCircleLeft />
-                    </IconButton>
-                    <PaletteNavigator root={boxRef} onSaveLocal={onLocalSave} onSaveServer={onSave}>
-                        {combinedOption.paletteButtons}
-                    </PaletteNavigator>
+                    <MarkerMain ref={mapTargetRef} open={open && !combinedOption.hideLabelNavigator} />
+                    {
+                        !combinedOption.hideLabelNavigator &&
+                        <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
+                            <ArrowCircleLeft />
+                        </IconButton>
+                    }
+                    {
+                        !combinedOption.hidePalette &&
+                        <PaletteNavigator root={boxRef} onSaveLocal={onLocalSave} onSaveServer={onSave} confirmOnSave={combinedOption.confirmOnSave}>
+                            {combinedOption.paletteButtons}
+                        </PaletteNavigator>
+                    }
                     {
                         !combinedOption.readOnly &&
-                        <ToolNavigator pageLabelInfo={localLabelInfo} fitPoint={combinedOption.fitPoint} modifyOnly={combinedOption.modifyOnly} />
+                        <ToolNavigator
+                            pageLabelInfo={localLabelInfo}
+                            fitPoint={combinedOption.fitPoint}
+                            modifyOnly={combinedOption.modifyOnly}
+                            toolRequest={toolRequest}
+                            onToolChange={(tool) => callbacks.current.onToolChange?.(tool)}
+                        />
                     }
-                    <LabelNavigator 
-                        open={open} 
-                        labelMemoType={combinedOption.labelMemoType} 
-                        labelMemoOptions={combinedOption.labelMemoOptions} 
-                        manageLabels={combinedOption.manageLabels} 
-                        handleClassChanged={handleClassChanged}
-                        onOpenChange={() => {
-                            setOpen(false);
-                        }} 
-                    />
+                    {
+                        !combinedOption.hideLabelNavigator &&
+                        <LabelNavigator
+                            open={open}
+                            labelMemoType={combinedOption.labelMemoType}
+                            labelMemoOptions={combinedOption.labelMemoOptions}
+                            manageLabels={combinedOption.manageLabels}
+                            handleClassChanged={handleClassChanged}
+                            onOpenChange={() => {
+                                setOpen(false);
+                            }}
+                        />
+                    }
                 </Box>
                 <Confirm open={openConfirm} title={"로컬 데이터 확인"} content={"로컬에 저장된 데이터가 발견되었습니다. 불러오시겠습니까?"} onHandleOpen={onHandleOpen} onHandleConfirm={onHandleLocalLoad} />
                 <Snackbar

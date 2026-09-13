@@ -77,6 +77,7 @@ class BasicDrawer<T extends BaseMark> {
         savedData.coco = savedData.coco ? fitPoints(iW, iH, savedData.coco, true, fitPoint): savedData.coco;
         savedData.pascal_voc = savedData.pascal_voc ? fitPoints(iW, iH, savedData.pascal_voc, true, fitPoint): savedData.pascal_voc;
         savedData.yolo = savedData.yolo ? fitPoints(iW, iH, savedData.yolo, true, fitPoint): savedData.yolo;
+        savedData.depth = savedData.depth ? fitPoints(iW, iH, savedData.depth, true, fitPoint): savedData.depth;
 
         return savedData;
     }

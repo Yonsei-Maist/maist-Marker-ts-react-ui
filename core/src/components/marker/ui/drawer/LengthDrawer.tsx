@@ -2,7 +2,7 @@ import { Geometry, LineString } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 
 import { Feature } from "ol";
-import { primaryAction, platformModifierKeyOnly, never } from "ol/events/condition";
+import { primaryAction, platformModifierKeyOnly, altKeyOnly, singleClick } from "ol/events/condition";
 import { measureStyleFunciton } from "./Styler";
 import { Style } from "ol/style";
 import VectorLayer from "ol/layer/Vector";
@@ -13,7 +13,7 @@ import { Coordinate } from "ol/coordinate";
 import BaseDrawer from "./BaseDrawer";
 import { TOOL_MEMO, TOOL_TYPE } from "@/constants/tag";
 
-class LengthMark extends BaseMark {
+export class LengthMark extends BaseMark {
     location: Coordinate[];
 
     refresh(): LabelFormat {
@@ -85,7 +85,9 @@ class LengthDrawer extends BaseDrawer<LengthMark> {
             condition: function (event) {
                 return primaryAction(event) && !platformModifierKeyOnly(event);
             },
-            insertVertexCondition: never,
+            // 정점 추가는 단일 선택일 때, 정점 삭제는 Alt+클릭
+            insertVertexCondition: () => select.getFeatures().getLength() == 1,
+            deleteCondition: (event) => altKeyOnly(event) && singleClick(event),
             features: select.getFeatures()
         });
 
@@ -94,6 +96,31 @@ class LengthDrawer extends BaseDrawer<LengthMark> {
 
     getVectorStyle(feature?: FeatureLike): Style | Style[] {
         return measureStyleFunciton(feature, this.formatLength);
+    }
+}
+
+/**
+ * Polyline: 측정 표시 없이 선형 병변(주름선·경계선)을 라벨로 기록하는 개곡선 도구. (1.4+)
+ * 저장 형식은 Length와 같다 (coco = [x1, y1, x2, y2, ...]).
+ */
+export class PolylineDrawer extends LengthDrawer {
+    constructor() {
+        super((line: number) => "");
+    }
+
+    createDraw(layer:VectorLayer<Feature<Geometry>>) {
+        this.draw = new Draw({
+            source: layer.getSource(),
+            type: "LineString",
+            freehand: false,
+            condition: this.condition
+        });
+
+        return this.draw;
+    }
+
+    getVectorStyle(feature?: FeatureLike): Style | Style[] {
+        return BaseDrawer.prototype.getVectorStyle.call(this, feature);
     }
 }
 

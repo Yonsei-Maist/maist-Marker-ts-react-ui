@@ -16,14 +16,17 @@ export interface PaletteNavigatorProps {
     root: any;
     onSaveLocal: () => void;
     onSaveServer: () => void;
+    /** false면 확인 대화상자 없이 바로 저장 (1.4+) */
+    confirmOnSave?: boolean;
 }
 
-function PaletteNavigator({ children, root, onSaveLocal, onSaveServer }: PaletteNavigatorProps) {
+function PaletteNavigator({ children, root, onSaveLocal, onSaveServer, confirmOnSave = true }: PaletteNavigatorProps) {
     const { map, isLoaded } = useMap();
     const [gridLayer, setGridLayer] = useState(undefined as undefined | Graticule);
     const [selectedList, setSelectedList] = useState([]);
     const [openConfirm, setOpenConfirm] = useState(false);
-    const [skipConfirm, setSkipConfirm] = useState(false);
+    const [skipConfirmStored, setSkipConfirm] = useState(false);
+    const skipConfirm = skipConfirmStored || !confirmOnSave;
 
     const [canvasSizeViewer, setCanvasSizeViewer] = useState(undefined as undefined | HTMLDivElement);
     const menuRef = useRef(undefined);

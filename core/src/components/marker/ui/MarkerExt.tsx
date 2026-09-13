@@ -18,7 +18,7 @@ function AddonContainer({children, onMount}) {
     return <>{children}</>
 }
 
-function MarkerExt({fileUri, fileBlob, saveHandler, handleClassChanged, children = [<PresetBox key={0}/>, <PresetPolygon key={1}/>, <PresetEllipse key={2}/>], axiosInstance, options}: MarkerProps, ref: Ref<MarkerState>) {
+function MarkerExt({fileUri, children = [<PresetBox key={0}/>, <PresetPolygon key={1}/>, <PresetEllipse key={2}/>], ...rest}: MarkerProps, ref: Ref<MarkerState>) {
     const [mounted, setMounted] = useState(false);
 
     return (
@@ -30,7 +30,7 @@ function MarkerExt({fileUri, fileBlob, saveHandler, handleClassChanged, children
                 </AddonContainer>
                 {
                     mounted &&
-                    <Marker ref={ref} fileUri={fileUri} fileBlob={fileBlob} saveHandler={saveHandler} handleClassChanged={handleClassChanged} axiosInstance={axiosInstance} options={options}/>
+                    <Marker ref={ref} fileUri={fileUri} {...rest}/>
                 }
             </AddonProvider>
         </ReaderAddonProvider>
