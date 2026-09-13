@@ -24,7 +24,7 @@ class AreaDrawer extends PolygonDrawer {
     }
 
     createMark(saveData: LabelFormat | string, toolType: string, memo?: string): PolygonMark {
-        let mark = super.createMark(saveData, memo);
+        let mark = super.createMark(saveData, toolType, memo);
         mark.feature.set(TOOL_TYPE, toolType);
         mark.toolType = toolType;
         return mark;

@@ -36,6 +36,37 @@ const HighlightedText = ({ text, highlight, ...props }) => {
     );
 };
 
+interface SelectClassProps {
+    title: string;
+    value?: ClassInfo;
+    options: ClassInfo[];
+    onChange: (value: ClassInfo) => void;
+}
+
+/**
+ * 컴포넌트 밖에 정의해야 렌더마다 새 컴포넌트 타입이 되어 Autocomplete가
+ * 포커스와 입력값을 잃는 문제가 생기지 않는다.
+ */
+function SelectClass({ title, value, options, onChange }: SelectClassProps) {
+    return <Autocomplete
+        size='small'
+        fullWidth
+        options={options}
+        renderInput={(params) => <FormControlLabel labelPlacement={"top"} control={<TextField {...params} fullWidth sx={{width: '160px'}}/>} label={title}/>}
+        value={value ?? null}
+        isOptionEqualToValue={(option, v) => option.labelName === v.labelName}
+        getOptionLabel={(option) => option.labelName}
+        renderOption={(props, option, state) => {
+            return (
+                <Tooltip title={option.labelName} placement="bottom" key={option.labelName}>
+                    <HighlightedText {...props} text={option.labelName} highlight={state.inputValue}/>
+                </Tooltip>
+            );
+        }}
+        onChange={(e, v) => { if (v) onChange(v); }}
+    />
+}
+
 interface LabelNavigatorProps {
     open?: boolean;
     labelMemoType?: LabelMemoType;
@@ -51,25 +82,6 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
     const { redrawFeatures, remove, select, unselect } = useMap();
 
     const [openManager, setOpenManager] = useState(false);
-    
-    const SelectClass = ({title, value, onChange}) => {
-        return <Autocomplete
-            size='small'
-            fullWidth
-            options={labelNameList}
-            renderInput={(params) => <FormControlLabel labelPlacement={"top"} control={<TextField {...params} fullWidth sx={{width: '160px'}}/>} label={title}/>}
-            value={value}
-            getOptionLabel={(option) => option.labelName}
-            renderOption={(props, option, state, ownerState) => {
-                return (
-                    <Tooltip title={option.labelName} placement="bottom" key={option.labelName}>
-                        <HighlightedText {...props} text={option.labelName} highlight={state.inputValue}/>
-                    </Tooltip>
-                );
-            }}
-            onChange={(e, value) => onChange(value)}
-        />
-    }
 
     return (
         <RelDrawer variant="persistent" open={open} anchor={"right"}>
@@ -84,7 +96,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                 </Box>
             }
             <Box sx={{p: '15px'}}>
-                <SelectClass title={'Current Class Label'} value={selectedLabel} onChange={setSelectedLabel}/>
+                <SelectClass title={'Current Class Label'} value={selectedLabel} options={labelNameList} onChange={setSelectedLabel}/>
             </Box>
             <Divider/>
             <List>
@@ -101,11 +113,6 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                     break;
                                 }
                             }
-                        }
-
-                        if (!o.label) {
-                            o.label = selectedLabel;
-                            o.feature.set(MARK, o);
                         }
 
                         return (
@@ -141,7 +148,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                             <DeleteForever />
                                         </IconButton>
                                     </Box>
-                                    <SelectClass title={''} value={o.label} onChange={(value: ClassInfo) => {
+                                    <SelectClass title={''} value={o.label} options={labelNameList} onChange={(value: ClassInfo) => {
                                         o.label = value;
                                         o.feature.set(MARK, o);
                                         redrawFeatures();

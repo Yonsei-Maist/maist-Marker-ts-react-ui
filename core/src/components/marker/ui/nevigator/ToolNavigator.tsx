@@ -57,8 +57,19 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
     const { addons } = useAddon();
 
     const context = useRef({ drawerMap: new Map<string, BaseDrawer<BaseMark>>(), toolType: "" } as ToolContext);
+    const keydownRef = useRef<((evt: KeyboardEvent) => void) | null>(null);
     const [toolType, setToolType] = useState("");
     const [toolMode, setToolMode] = useState(Mode.Draw);
+
+    // 언마운트 시 document 키보드 리스너 정리 (리마운트마다 누적되던 누수 방지)
+    useEffect(() => {
+        return () => {
+            if (keydownRef.current) {
+                document.removeEventListener('keydown', keydownRef.current, false);
+                keydownRef.current = null;
+            }
+        };
+    }, []);
 
     function createDrawers(layer: VectorLayer<Feature<Geometry>>, select: Select) {
         const { drawerMap } = context.current;
@@ -330,6 +341,9 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
 
                 var keydown = function (evt: KeyboardEvent) {
                     if (modifyOnly) return;
+                    // 메모 입력 등 텍스트 필드에서 Backspace를 누를 때 선택 도형이 지워지면 안 된다.
+                    const target = evt.target as HTMLElement | null;
+                    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
                     var key = evt.key;
                     if (key == "Backspace" || key == "Delete") {
                         const { removeModify } = context.current;
@@ -337,6 +351,10 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly }: ToolNavigatorPro
                     }
                 };
 
+                if (keydownRef.current) {
+                    document.removeEventListener('keydown', keydownRef.current, false);
+                }
+                keydownRef.current = keydown;
                 document.addEventListener('keydown', keydown, false);
 
                 let mapTmp = drawerMap.get(toolType);

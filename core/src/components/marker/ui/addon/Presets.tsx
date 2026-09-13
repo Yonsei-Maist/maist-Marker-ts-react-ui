@@ -12,6 +12,7 @@ import { ResponseMessage, ResultData } from "@/models/response";
 import { Map, View } from "ol";
 
 import sizeOf from 'buffer-image-size';
+import { Buffer } from 'buffer';
 import { AxiosInstance } from "axios";
 import { fitSize } from "@/lib/sizeConverter";
 import Static from "ol/source/ImageStatic";
@@ -147,26 +148,22 @@ export const PresetImageReader = () => {
     }
 
     const parser = (map: Map, path: string, data: any, axiosInstance?: AxiosInstance) => {
-        window.Buffer = Buffer;
         const imageBuffer = Buffer.from(data);
         const imageInfo = sizeOf(imageBuffer);
 
-        let binary = '';
-        let bytes = new Uint8Array(imageBuffer);
-        let len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-
-        let base64 = window.btoa(binary);
-        let imageSrc = 'data:image/png;base64,' + base64;
+        // 문자열 누적 + base64 대신 Blob URL을 쓴다. 큰 이미지에서 수십 배 빠르고 전역(window.Buffer)을 건드리지 않는다.
+        const mimeType = imageInfo.type === 'jpg' ? 'image/jpeg' : `image/${imageInfo.type || 'png'}`;
+        const imageSrc = URL.createObjectURL(new Blob([data], { type: mimeType }));
         let newSize = fitSize(imageInfo.width, imageInfo.height);
 
         let source = new Static({
             url: imageSrc,
             imageExtent: [0, -newSize[1], newSize[0], 0]
-            // imageExtent: [0, 0, newSize[0], newSize[1]]
         });
+
+        // 이미지가 디코딩되면 Blob URL은 더 이상 필요 없다.
+        source.on('imageloadend', () => URL.revokeObjectURL(imageSrc));
+        source.on('imageloaderror', () => URL.revokeObjectURL(imageSrc));
 
         let layer = new ImageLayer({
             source: source

@@ -1,6 +1,6 @@
 import { Feature } from "ol";
 import { Coordinate } from "ol/coordinate";
-import { primaryAction, platformModifierKeyOnly, always, never } from "ol/events/condition";
+import { primaryAction, platformModifierKeyOnly } from "ol/events/condition";
 import { Geometry, Polygon } from "ol/geom";
 import { Draw, Modify, Select } from "ol/interaction";
 import BaseMark, { LabelFormat } from "../mark/BaseMark";
@@ -161,7 +161,8 @@ class PolygonDrawer extends BaseDrawer<PolygonMark> {
             condition: function (event) {
                 return primaryAction(event) && !platformModifierKeyOnly(event);
             },
-            insertVertexCondition: select.getFeatures().getLength() == 1 ? always : never,
+            // 생성 시점이 아니라 이벤트 시점에 평가해야 단일 선택 상태에서 꼭짓점 추가가 동작한다.
+            insertVertexCondition: () => select.getFeatures().getLength() == 1,
             features: select.getFeatures()
         });
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { forwardRef } from 'react';
 import styled from '@emotion/styled';
 
 const MarkComponentStyled = styled.div`
@@ -9,7 +9,7 @@ const MarkComponentStyled = styled.div`
         right: inherit;
         text-align: left;
     }
-    
+
     .ol-attribution button {
         display: none;
     }
@@ -20,20 +20,17 @@ const MarkComponentStyled = styled.div`
 `
 
 type MarkComponentProps = {
+    className?: string;
 };
 
-function MarkComponent({}: MarkComponentProps) {
-    const [value, setValue] = useState("init value");
-
-    useEffect(() => {
-        return () => {
-        }
-    }, [value]);
-
+/**
+ * OpenLayers 맵이 마운트되는 컨테이너.
+ * 고정 id 대신 ref로 대상을 넘기므로 한 페이지에 여러 Marker 인스턴스를 둘 수 있다.
+ */
+const MarkComponent = forwardRef<HTMLDivElement, MarkComponentProps>(function MarkComponent({ className }, ref) {
     return (
-        <MarkComponentStyled id="map">
-        </MarkComponentStyled>
+        <MarkComponentStyled ref={ref} className={className} />
     );
-}
+});
 
 export default MarkComponent;

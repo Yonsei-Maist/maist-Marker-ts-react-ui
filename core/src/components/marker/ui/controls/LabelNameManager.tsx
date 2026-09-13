@@ -92,24 +92,19 @@ function LabelNameManager({ open, onHandleClose }: LabelNameManagerProps) {
         if (exists) {
             setError(`Please remove all labels named '${labelInformation.labelName}' before remove`);
         } else {
-            let idx = labelNameList.findIndex(o => o.labelName == labelInformation.labelName);
-            if (idx > -1) {
-                labelNameList.splice(idx, 1);
-                setLabelNameList([...labelNameList]);
-            }
-
+            setLabelNameList(labelNameList.filter(o => o.labelName != labelInformation.labelName));
             setError(undefined);
         }
     }
 
     const onHandleLabelChanged = (originLabel: ClassInfo, newLabel: ClassInfo) => {
-        let exists = labelNameList.find((o => o.labelName == originLabel.labelName));
-
-        if (exists) {
-            exists.color = newLabel.color;
-            exists.labelName = newLabel.labelName;
-            setLabelNameList(labelNameList);
-        }
+        // 기존 객체를 제자리 수정하지 않고 새 배열을 만들어 변경이 감지되도록 한다.
+        const next = labelNameList.map(o =>
+            o.labelName == originLabel.labelName
+                ? { ...o, color: newLabel.color, labelName: newLabel.labelName }
+                : o
+        );
+        setLabelNameList(next);
     }
 
     const onHandleColorClose = () => {

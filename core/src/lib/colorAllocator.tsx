@@ -1,5 +1,31 @@
-const htmlColors = ['AliceBlue', 'LightSkyBlue', 'LightCyan', 'LightPink', 'PaleTurquoise', 'NavajoWhite', 'LightBlue', 'Tan', 'IndianRed', 'SaddleBrown', 'Peru', 'Gray', 'Sienna', 'GoldenRod', 'GreenYellow', 'Gold', 'DarkGoldenRod', 'FireBrick', 'MediumVioletRed', 'MediumOrchid', 'LightSlateGray', 'MediumTurquoise', 'PaleGreen', 'Gainsboro', 'Orchid', 'DarkSalmon', 'Plum', 'LightCoral', 'Silver', 'MintCream', 'Khaki', 'SeaShell', 'Violet', 'MistyRose', 'BurlyWood', 'PapayaWhip', 'LightSalmon', 'Bisque', 'SandyBrown', 'PaleGoldenRod', 'RosyBrown', 'Pink', 'PaleVioletRed', 'MediumPurple', 'Thistle', 'HotPink', 'Coral', 'Crimson', 'DarkRed', 'Red', 'Brown', 'Olive', 'ForestGreen', 'Teal', 'CadetBlue', 'DarkSlateBlue', 'DarkOliveGreen', 'MediumSeaGreen', 'MediumSpringGreen', 'Aqua', 'DodgerBlue', 'MediumSlateBlue', 'SkyBlue', 'SteelBlue', 'DarkSeaGreen', 'Turquoise', 'LightGreen', 'YellowGreen', 'LimeGreen', 'LawnGreen', 'OliveDrab', 'Chocolate', 'DarkKhaki', 'SlateGray', 'DarkSlateGray', 'Green', 'Lime', 'Chartreuse', 'Yellow', 'DarkOrange', 'Salmon', 'DeepPink', 'Tomato', 'DimGray', 'SlateBlue', 'DarkMagenta', 'MidnightBlue', 'Purple', 'BlueViolet', 'CornflowerBlue', 'PowderBlue', 'LightSeaGreen', 'Cyan', 'SpringGreen', 'DarkCyan', 'RoyalBlue', 'DarkOrchid', 'Indigo', 'MediumBlue', 'DarkViolet', 'Fuchsia', 'LightSteelBlue', 'Ivory', 'Aquamarine', 'Lavender', 'MediumAquaMarine', 'DarkTurquoise', 'SeaGreen', 'DarkGreen', 'Maroon', 'OrangeRed', 'Wheat', 'Orange', 'Moccasin', 'Magenta', 'LightGray', 'DeepSkyBlue', 'Blue', 'DarkBlue', 'PeachPuff', 'Navy', 'AntiqueWhite', 'BlanchedAlmond', 'LemonChiffon', 'LightGoldenRodYellow', 'Cornsilk', 'LightYellow', 'OldLace', 'Linen', 'Beige', 'FloralWhite', 'Snow', 'GhostWhite', 'Azure', 'HoneyDew', 'LavenderBlush'];
+/**
+ * 클래스 자동 배색 팔레트.
+ * 밝은 배경과 어두운 배경 모두에서 외곽선이 보이도록 채도가 높고 명도가 중간인 색만 사용한다.
+ * (기존 HTML 색상 이름 목록은 AliceBlue, Ivory 같은 흰색 계열이 앞에 있어 도형이 보이지 않았다.)
+ */
+const palette = [
+    '#e6194b', // red
+    '#3cb44b', // green
+    '#4363d8', // blue
+    '#f58231', // orange
+    '#911eb4', // purple
+    '#42d4f4', // cyan
+    '#f032e6', // magenta
+    '#bfef45', // lime
+    '#fabed4', // pink
+    '#469990', // teal
+    '#dcbeff', // lavender
+    '#9a6324', // brown
+    '#fffac8', // beige
+    '#800000', // maroon
+    '#aaffc3', // mint
+    '#808000', // olive
+    '#ffd8b1', // apricot
+    '#000075', // navy
+    '#a9a9a9', // grey
+    '#ffe119', // yellow
+];
 
 export function allocateColor(idx: number) {
-    return htmlColors[idx % htmlColors.length];
+    return palette[((idx % palette.length) + palette.length) % palette.length];
 }

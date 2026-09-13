@@ -46,7 +46,8 @@ const MarkerMain = styled(MarkComponent, { shouldForwardProp: (prop) => prop !==
 }));
 
 export interface MarkerState {
-    getLabelList: () => LabelInfo[];
+    /** 페이지별 라벨 목록 (단일 이미지도 페이지 1개짜리 배열) */
+    getLabelList: () => LabelInfo[][];
     getLabelNameList: () => ClassInfo[];
 }
 
@@ -91,6 +92,8 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
 
     const [open, setOpen] = useState(true);
     const boxRef = useRef(null);
+    // OpenLayers 맵 컨테이너. 고정 id 대신 ref를 넘겨 다중 인스턴스를 허용한다.
+    const mapTargetRef = useRef<HTMLDivElement>(null);
     const [localLabelInfo, setLocalLabelInfo] = useState(combinedOption.savedLabelInfo);
     const [openConfirm, setOpenConfirm] = useState(false);
     const [memo, setMemo] = useState(combinedOption.savedMemo);
@@ -236,20 +239,20 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
 
                 setGlobalLabelNameList([...newLabelNameList]);
             } else {
+                // 호스트가 넘긴 객체를 직접 고치지 않고 복사본에 색을 채운다.
                 let labelNameList = combinedOption.labelNameList as ClassInfo[];
-                labelNameList.map((o: ClassInfo, i: number) => {
-                    if (!o.color) {
-                        o.color = allocateColor(i);
-                    }
-                });
-                setGlobalLabelNameList(labelNameList);
+                setGlobalLabelNameList(labelNameList.map((o: ClassInfo, i: number) => (
+                    o.color ? { ...o } : { ...o, color: allocateColor(i) }
+                )));
             }
         } else {
             setGlobalLabelNameList([]);
         }
 
         setLocalLabelInfo(combinedOption.savedLabelInfo);
-    }, [options]);
+        // options 객체 자체가 아니라 실제로 로드에 영향을 주는 필드만 감시한다.
+        // (인라인 options 객체 때문에 매 렌더마다 라벨이 리로드되어 편집 중 도형이 사라지던 문제)
+    }, [combinedOption.labelNameList, combinedOption.savedLabelInfo]);
 
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
@@ -272,10 +275,11 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                 header={combinedOption.header}
                 withCredentials={combinedOption.withCredentials}
                 memo={memo}
+                targetRef={mapTargetRef}
             >
                 <PageControl />
                 <Box ref={boxRef} height={"100%"} position={"relative"}>
-                    <MarkerMain open={open} />
+                    <MarkerMain ref={mapTargetRef} open={open} />
                     <IconButton color="secondary" sx={{ position: "absolute", right: "15px", top: "15px" }} onClick={() => { setOpen(true); }}>
                         <ArrowCircleLeft />
                     </IconButton>

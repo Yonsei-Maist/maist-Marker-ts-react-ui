@@ -35,9 +35,11 @@ interface MapProviderProps {
     withCredentials?: boolean;
     memo?: string;
     load: boolean;
+    /** OpenLayers 맵을 마운트할 요소. 없으면 예전처럼 id="map" 요소를 찾는다. */
+    targetRef?: React.RefObject<HTMLElement | null>;
 };
 
-function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList, header, withCredentials, memo, load }: MapProviderProps, ref: Ref<MapProviderState>) {
+function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList, header, withCredentials, memo, load, targetRef }: MapProviderProps, ref: Ref<MapProviderState>) {
     const labelRef = useRef<LabelProviderState>(null);
     const { readFile, makeLayer } = useReaderAddon();
 
@@ -73,7 +75,8 @@ function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList
         return {
             pageLabelList: getPageLabelList,
             memo: getMemo,
-            labelNameList: () => labelNameList,
+            // 클래스 관리 대화상자에서 편집한 최신 목록을 돌려준다 (예전에는 초기 prop을 돌려줬다).
+            labelNameList: () => labelRef.current?.labelNameList ?? labelNameList,
             map: () => map
         } as MapProviderState;
     });
@@ -173,7 +176,7 @@ function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList
             const map = new olMap({
                 interactions,
                 controls: defaults({ zoom: false, rotate: false }).extend([]),
-                target: 'map'
+                target: targetRef?.current ?? 'map'
             });
 
             map.set(MAP_MEMO, memo);

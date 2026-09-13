@@ -116,10 +116,10 @@ class EllipseMark extends BaseMark {
             this.first = [minX, -minY];
             this.last = [maxX, -maxY];
         } else if (format.pascal_voc) {
-            const minX = format.coco[0];
-            const minY = format.coco[1];
-            const maxX = format.coco[2];
-            const maxY = format.coco[3];
+            const minX = format.pascal_voc[0];
+            const minY = format.pascal_voc[1];
+            const maxX = format.pascal_voc[2];
+            const maxY = format.pascal_voc[3];
 
             this.first = [minX, -minY];
             this.last = [maxX, -maxY];

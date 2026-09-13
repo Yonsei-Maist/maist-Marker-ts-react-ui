@@ -3,6 +3,7 @@ import { LabelContext, ClassInfo } from "../context";
 import BaseMark from "../ui/mark/BaseMark";
 import { Feature } from "ol";
 import { LabelInfo } from "../ui";
+import { MARK } from "@/constants/tag";
 
 export interface LabelProviderState {
     pageLabelList: Map<number, BaseMark[]>;
@@ -58,6 +59,12 @@ function LabelProvider({ labelNameList: originLabelNameList, children }: LabelPr
     }
 
     function addLabel(mark: BaseMark) {
+        // 새 도형은 현재 선택된 클래스를 기본 라벨로 갖는다.
+        // (예전에는 LabelNavigator가 렌더 중에 대입했는데, 렌더 중 상태 변형은 React 규칙 위반이다.)
+        if (!mark.label && selectedLabel) {
+            mark.label = selectedLabel;
+            mark.feature?.set(MARK, mark);
+        }
         pageLabelList.get(currentPageNo).push(mark);
         setPageLabelList(new Map(pageLabelList));
     }
