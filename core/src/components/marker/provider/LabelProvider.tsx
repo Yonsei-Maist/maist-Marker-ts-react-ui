@@ -39,6 +39,12 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
     const callbacks = useRef({ onLabelsChange, onSelectedLabelChange, onSelectionChange });
     callbacks.current = { onLabelsChange, onSelectedLabelChange, onSelectionChange };
 
+    // addLabel/removeLabel은 ToolNavigator가 맵 생성 시점에 ol 이벤트 핸들러로 붙잡는다.
+    // 그 클로저에서도 최신 클래스·목록을 쓰도록 ref로 읽는다.
+    // (없으면 클래스를 바꿔도 처음 선택한 클래스로 도형이 저장된다)
+    const latest = useRef({ pageLabelList, currentPageNo, selectedLabel });
+    latest.current = { pageLabelList, currentPageNo, selectedLabel };
+
     function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
         let localPageLabelList = pageLabelList
         if (localPageLabelList.size != pages && !pageLabelInfo) {
@@ -76,6 +82,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
     }
 
     function addLabel(mark: BaseMark) {
+        const { pageLabelList, currentPageNo, selectedLabel } = latest.current;
         // 새 도형은 현재 선택된 클래스를 기본 라벨로 갖는다.
         if (!mark.label && selectedLabel) {
             mark.label = selectedLabel;
@@ -86,6 +93,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
     }
 
     function removeLabel(feature: Feature) {
+        const { pageLabelList, currentPageNo } = latest.current;
         let removeIdx = -1;
         let labelList = pageLabelList.get(currentPageNo);
         for (let i = 0; i < labelList.length; i++) {
