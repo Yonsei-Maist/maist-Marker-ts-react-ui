@@ -262,7 +262,7 @@ class MaskDrawer extends BaseDrawer<MaskMark> {
             img.onload = () => {
                 c.getContext('2d')!.drawImage(img, 0, 0);
                 mark.pendingMask = undefined;
-                const map = this.draw?.getMap?.();
+                const map = this.map ?? this.draw?.getMap?.();
                 map?.get(MASK_LAYER)?.getSource()?.changed();
             };
             img.src = mark.pendingMask;

@@ -97,6 +97,12 @@ export interface MarkerProps {
 };
 
 export interface MarkerOptions {
+    /**
+     * 보기 전용. 저장된 마크를 표시하고 클릭·`selectMark`로 선택만 할 수 있다.
+     * 툴바·브러시 설정·저장 버튼(Ctrl+S)·삭제 키가 없고, ref의 편집 메서드(setTool, removeMark,
+     * setMarkLabel, setMarkMemo, setMarkData, setMarkOrder, newInstance)는 아무것도 하지 않는다.
+     * 인터랙션 구성은 마운트 시점 값으로 정해지므로, 바꾸려면 `key`를 바꿔 다시 마운트한다.
+     */
     readOnly?: boolean;
     manageLabels?: boolean;
     savedLabelInfo?: LabelInfo[][];
@@ -315,6 +321,9 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
         // (인라인 options 객체 때문에 매 렌더마다 라벨이 리로드되어 편집 중 도형이 사라지던 문제)
     }, [combinedOption.labelNameList, combinedOption.savedLabelInfo]);
 
+    const readOnlyRef = useRef(!!combinedOption.readOnly);
+    readOnlyRef.current = !!combinedOption.readOnly;
+
     useImperativeHandle(ref, () => ({
         getLabelList: () => {
             return getLabel(true);
@@ -324,19 +333,19 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
         },
         getSelectedLabel: () => providerState.current?.selectedLabel(),
         setSelectedLabel: (labelName: string) => providerState.current?.setSelectedLabel(labelName) ?? false,
-        setTool: (tool: string) => setToolRequest(prev => ({ tool, seq: (prev?.seq ?? 0) + 1 })),
+        setTool: (tool: string) => readOnlyRef.current ? undefined : setToolRequest(prev => ({ tool, seq: (prev?.seq ?? 0) + 1 })),
         getSelectedIds: () => providerState.current?.selectedIds() ?? [],
         selectMark: (id: string, exclusive?: boolean) => providerState.current?.selectMark(id, exclusive),
         unselectMark: (id: string) => providerState.current?.unselectMark(id),
         clearSelection: () => providerState.current?.clearSelection(),
-        removeMark: (id: string) => providerState.current?.removeMark(id),
-        setMarkLabel: (id: string, labelName: string) => providerState.current?.setMarkLabel(id, labelName) ?? false,
-        setMarkMemo: (id: string, memoText: string) => providerState.current?.setMarkMemo(id, memoText),
-        setMarkData: (id: string, data: LabelFormat) => providerState.current?.setMarkData(id, data) ?? false,
-        setMarkOrder: (id: string, order: number) => providerState.current?.setMarkOrder(id, order),
+        removeMark: (id: string) => readOnlyRef.current ? undefined : providerState.current?.removeMark(id),
+        setMarkLabel: (id: string, labelName: string) => readOnlyRef.current ? false : providerState.current?.setMarkLabel(id, labelName) ?? false,
+        setMarkMemo: (id: string, memoText: string) => readOnlyRef.current ? undefined : providerState.current?.setMarkMemo(id, memoText),
+        setMarkData: (id: string, data: LabelFormat) => readOnlyRef.current ? false : providerState.current?.setMarkData(id, data) ?? false,
+        setMarkOrder: (id: string, order: number) => readOnlyRef.current ? undefined : providerState.current?.setMarkOrder(id, order),
         getMaskSettings: () => providerState.current?.getMaskSettings(),
         setMaskSettings: (patch: Partial<MaskSettings>) => providerState.current?.setMaskSettings(patch),
-        newInstance: () => providerState.current?.newInstance()
+        newInstance: () => readOnlyRef.current ? undefined : providerState.current?.newInstance()
     } as MarkerState));
 
     if (globalLabelNameList)
@@ -367,13 +376,13 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                     }
                     {
                         !combinedOption.hidePalette &&
-                        <PaletteNavigator root={boxRef} onSaveLocal={onLocalSave} onSaveServer={onSave} confirmOnSave={combinedOption.confirmOnSave}>
+                        <PaletteNavigator root={boxRef} onSaveLocal={onLocalSave} onSaveServer={onSave} confirmOnSave={combinedOption.confirmOnSave} readOnly={combinedOption.readOnly}>
                             {combinedOption.paletteButtons}
                         </PaletteNavigator>
                     }
                     {
-                        !combinedOption.readOnly &&
                         <ToolNavigator
+                            readOnly={combinedOption.readOnly}
                             pageLabelInfo={localLabelInfo}
                             fitPoint={combinedOption.fitPoint}
                             modifyOnly={combinedOption.modifyOnly}
@@ -387,7 +396,8 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                             open={open}
                             labelMemoType={combinedOption.labelMemoType}
                             labelMemoOptions={combinedOption.labelMemoOptions}
-                            manageLabels={combinedOption.manageLabels}
+                            manageLabels={combinedOption.manageLabels && !combinedOption.readOnly}
+                            readOnly={combinedOption.readOnly}
                             handleClassChanged={handleClassChanged}
                             onOpenChange={() => {
                                 setOpen(false);

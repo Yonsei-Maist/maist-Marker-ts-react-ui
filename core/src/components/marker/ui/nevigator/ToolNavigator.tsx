@@ -48,6 +48,8 @@ export interface ToolNavigatorProps {
     toolRequest?: { tool: string; seq: number };
     /** 사용자가 툴바에서 도구를 바꿨을 때 (1.4+) */
     onToolChange?: (tool: string) => void;
+    /** 보기 전용: 마크를 불러와 표시·선택만 한다. 그리기·수정·이동·삭제 인터랙션과 툴바를 만들지 않는다. (1.4.1+) */
+    readOnly?: boolean;
 };
 
 export interface ToolContext {
@@ -60,7 +62,7 @@ export interface ToolContext {
     toolType: string;
 }
 
-function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToolChange }: ToolNavigatorProps) {
+function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToolChange, readOnly = false }: ToolNavigatorProps) {
     const { map, isLoaded, findVectorLayer, findMainLayer } = useMap();
     const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, labelNameList, addLabel, removeLabel, refreshLabels, selectedLabel } = useLabel();
     // 드로어(브러시·키포인트)가 현재 클래스를 읽을 수 있도록 맵에 실어 둔다
@@ -122,6 +124,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
         });
 
         const map_ = layer.get('map') ?? map;
+        drawerMap.forEach((value) => { value.map = map_; });
         if (map_) {
             map_.set(DRAWER_MAP, drawerMap);
             map_.set(FIT_POINT, fitPoint);
@@ -195,7 +198,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
     }
 
     function applyTool(type: string) {
-        if (type === "") {
+        if (type === "" || readOnly) {
             setToolType("");
             setToolMode(Mode.Select);
         } else {
@@ -233,6 +236,8 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
     }
 
     function addCustomInteraction(tag: string, interaction: Interaction) {
+        // 보기 전용에서는 선택 외의 인터랙션을 맵에 붙이지 않는다
+        if (readOnly && tag !== "select") return;
         if (map) {
             const interactions = map.getInteractions().getArray();
             for (let i = 0; i < interactions.length; i++) {
@@ -409,7 +414,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
                 addCustomInteraction("snap", snap);
 
                 var keydown = function (evt: KeyboardEvent) {
-                    if (modifyOnly) return;
+                    if (modifyOnly || readOnly) return;
                     // 메모 입력 등 텍스트 필드에서 Backspace를 누를 때 선택 도형이 지워지면 안 된다.
                     const target = evt.target as HTMLElement | null;
                     if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
@@ -517,7 +522,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
     }, [toolMode]);
 
     const activeDrawer = context.current.drawerMap.get(toolType);
-    const maskActive = toolMode == Mode.Draw && activeDrawer instanceof MaskDrawer;
+    const maskActive = !readOnly && toolMode == Mode.Draw && activeDrawer instanceof MaskDrawer;
     const maskSettings = map ? getMaskSettings(map) : undefined;
     const updateMask = (patch: Partial<typeof maskSettings>) => {
         if (!map || !maskSettings) return;
@@ -550,6 +555,8 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
                 </Stack>
             </Box>
         }
+        {
+            !readOnly &&
         <Box position={"absolute"} left={"15px"} top={"15px"}>
             <ToggleButtonGroup value={checkActive()} orientation='vertical' sx={{ background: "white" }}>
                 <ToggleButton value={Mode.Select} key={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
@@ -578,6 +585,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
                 }
             </ToggleButtonGroup>
         </Box>
+        }
         </>
     );
 }

@@ -18,9 +18,11 @@ export interface PaletteNavigatorProps {
     onSaveServer: () => void;
     /** false면 확인 대화상자 없이 바로 저장 (1.4+) */
     confirmOnSave?: boolean;
+    /** 보기 전용: 저장 버튼과 Ctrl+S를 없앤다 (1.4.1+) */
+    readOnly?: boolean;
 }
 
-function PaletteNavigator({ children, root, onSaveLocal, onSaveServer, confirmOnSave = true }: PaletteNavigatorProps) {
+function PaletteNavigator({ children, root, onSaveLocal, onSaveServer, confirmOnSave = true, readOnly = false }: PaletteNavigatorProps) {
     const { map, isLoaded } = useMap();
     const [gridLayer, setGridLayer] = useState(undefined as undefined | Graticule);
     const [selectedList, setSelectedList] = useState([]);
@@ -109,11 +111,11 @@ function PaletteNavigator({ children, root, onSaveLocal, onSaveServer, confirmOn
     };
 
     const onHandleShortcuts = useCallback((e: globalThis.KeyboardEvent) => {
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        if (!readOnly && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
             e.preventDefault();
             onHandleSave();
         }
-    }, [onHandleSave]);
+    }, [onHandleSave, readOnly]);
 
     const onHandleSaveServer = (confirm: boolean, dontAskAgain: boolean) => {
         if (confirm) {
@@ -162,9 +164,12 @@ function PaletteNavigator({ children, root, onSaveLocal, onSaveServer, confirmOn
         zIndex: 1
     }}>
         <ToggleButtonGroup value={selectedList} sx={{ background: "white" }}>
-            <ToggleButton size="small" value={MENU} key={MENU} onClick={onHandleSave} ref={menuRef}>
-                <Save />
-            </ToggleButton>
+            {
+                !readOnly &&
+                <ToggleButton size="small" value={MENU} key={MENU} onClick={onHandleSave} ref={menuRef}>
+                    <Save />
+                </ToggleButton>
+            }
             <ToggleButton size="small" value={WHITE_BACKGROUND} key={WHITE_BACKGROUND} onClick={onHandleWhiteBackground}>
                 <Wallpaper />
             </ToggleButton>

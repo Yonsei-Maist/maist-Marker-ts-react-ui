@@ -41,14 +41,16 @@ interface SelectClassProps {
     value?: ClassInfo;
     options: ClassInfo[];
     onChange: (value: ClassInfo) => void;
+    disabled?: boolean;
 }
 
 /**
  * 컴포넌트 밖에 정의해야 렌더마다 새 컴포넌트 타입이 되어 Autocomplete가
  * 포커스와 입력값을 잃는 문제가 생기지 않는다.
  */
-function SelectClass({ title, value, options, onChange }: SelectClassProps) {
+function SelectClass({ title, value, options, onChange, disabled }: SelectClassProps) {
     return <Autocomplete
+        disabled={disabled}
         size='small'
         fullWidth
         options={options}
@@ -74,9 +76,11 @@ interface LabelNavigatorProps {
     manageLabels?: boolean;
     onOpenChange: () => void;
     handleClassChanged?: (classInfoList: ClassInfo[]) => void;
+    /** 보기 전용: 선택만 하고 삭제·클래스 변경·메모 편집을 막는다 (1.4.1+) */
+    readOnly?: boolean;
 };
 
-function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageLabels, handleClassChanged, onOpenChange = () => { } }: LabelNavigatorProps) {
+function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageLabels, handleClassChanged, readOnly = false, onOpenChange = () => { } }: LabelNavigatorProps) {
     const theme = useTheme();
     const { pageLabelList, currentPageNo, selectedFeatures, labelNameList, selectedLabel, setSelectedFeatures, removeLabel, setSelectedLabel, refreshLabels } = useLabel();
     const { redrawFeatures, remove, select, unselect } = useMap();
@@ -135,7 +139,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                             }
                                         }} />
                                         <Typography flexGrow={1} textAlign={'center'} variant="body1">{feature.get(TOOL_TYPE)}</Typography>
-                                        <IconButton onClick={() => {
+                                        <IconButton disabled={readOnly} onClick={() => {
                                             remove(o);
                                             removeLabel(feature);
                                             let newSelected = selectedFeatures || [];
@@ -148,7 +152,7 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                             <DeleteForever />
                                         </IconButton>
                                     </Box>
-                                    <SelectClass title={''} value={o.label} options={labelNameList} onChange={(value: ClassInfo) => {
+                                    <SelectClass title={''} disabled={readOnly} value={o.label} options={labelNameList} onChange={(value: ClassInfo) => {
                                         o.label = value;
                                         o.feature.set(MARK, o);
                                         redrawFeatures();
@@ -157,11 +161,11 @@ function LabelNavigator({ open = false, labelMemoType, labelMemoOptions, manageL
                                     }}/>
                                     <Box display={"flex"}>
                                         <Typography flexGrow={1} variant='overline'>{o.memo}</Typography>
-                                        <LabelMemoControl icon={<Edit />} type={labelMemoType} memoList={labelMemoOptions} memo={o.memo} onChangeMemo={(memo: string) => {
+                                        {!readOnly && <LabelMemoControl icon={<Edit />} type={labelMemoType} memoList={labelMemoOptions} memo={o.memo} onChangeMemo={(memo: string) => {
                                             o.memo = memo;
                                             setSelectedFeatures(selectedFeatures);
                                             refreshLabels();
-                                        }} />
+                                        }} />}
                                     </Box>
                                 </Stack>
                             </ListItem>

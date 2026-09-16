@@ -15,6 +15,8 @@ import { DrawObject } from "@/lib/CanvasDrawer";
 class BasicDrawer<T extends BaseMark> {
     draw:Draw;
     modify:Modify;
+    /** 드로어가 속한 맵. 인터랙션이 맵에 붙지 않는 보기 전용에서도 레이어 갱신에 쓴다 (1.4.1+) */
+    map?: Map;
 
     constructor() {
     }

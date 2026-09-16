@@ -34,6 +34,19 @@ export class LengthMark extends BaseMark {
 
         return super.refresh();
     }
+
+    /** 좌표 포맷(coco = [x1, y1, x2, y2, ...])에서 복원. 저장 시 뒤집은 y 부호를 되돌린다. */
+    fromFormat(format: LabelFormat): void {
+        if (format.coco) {
+            const points: Coordinate[] = [];
+            for (let i = 0; i + 1 < format.coco.length; i += 2) {
+                points.push([format.coco[i], -format.coco[i + 1]]);
+            }
+            this.location = points;
+        } else if (format.mark instanceof LengthMark) {
+            this.location = format.mark.location;
+        }
+    }
 }
 
 class LengthDrawer extends BaseDrawer<LengthMark> {
