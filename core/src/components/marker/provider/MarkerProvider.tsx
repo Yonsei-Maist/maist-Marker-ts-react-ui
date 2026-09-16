@@ -23,6 +23,8 @@ import { MaskMark, MaskSettings, getMaskSettings } from '../ui/drawer/MaskDrawer
 import { DrawObject } from '@/lib/CanvasDrawer';
 import { fitPoints } from '@/lib/sizeConverter';
 
+const CONTEXT_MENU_BLOCKED = 'CONTEXT_MENU_BLOCKED';
+
 export interface MapProviderState {
     pageLabelList: () => BaseMark[][];
     labelNameList: () => ClassInfo[];
@@ -374,12 +376,23 @@ function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList
             });
 
             graticuleLayer.setVisible(false);
-            map.addLayer(sourceData.layer);
-            map.addLayer(graticuleLayer);
+
+            // 이미지가 다시 로드되면(개발 모드 StrictMode의 이중 실행, 파일 교체 등) 이전 기본 레이어를 지우고
+            // 새 이미지·격자를 항상 맨 아래에 넣는다. 예전처럼 addLayer로 뒤에 붙이면 먼저 만들어진
+            // 도형·마스크 레이어 위를 사진이 덮어 마크가 보이지 않았다.
+            const layers = map.getLayers();
+            layers.getArray()
+                .filter((l) => l !== sourceData.layer && (l.get(IS_MAIN_LAYER) || l instanceof Graticule))
+                .forEach((l) => map.removeLayer(l));
+            layers.insertAt(0, sourceData.layer);
+            layers.insertAt(1, graticuleLayer);
             map.setView(sourceData.view);
-            map.getViewport().addEventListener('contextmenu', function (evt) {
-                evt.preventDefault();
-            });
+            if (!map.get(CONTEXT_MENU_BLOCKED)) {
+                map.getViewport().addEventListener('contextmenu', function (evt) {
+                    evt.preventDefault();
+                });
+                map.set(CONTEXT_MENU_BLOCKED, true);
+            }
 
             setIsLoaded(true);
         }
