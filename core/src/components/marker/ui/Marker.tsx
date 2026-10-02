@@ -75,6 +75,14 @@ export interface MarkerState {
     setMaskSettings: (patch: Partial<MaskSettings>) => void;
     /** 다음 브러시 스트로크가 새 인스턴스를 만들도록 */
     newInstance: () => void;
+    /* ---- 1.6+: 되돌리기 ---- */
+    /** 직전 상태로 되돌린다. 되돌릴 것이 없으면 false */
+    undo: () => boolean;
+    /** 되돌린 것을 다시 적용한다. 없으면 false */
+    redo: () => boolean;
+    /** 되돌리기·다시하기 가능 여부 (버튼 활성화용) */
+    canUndo: () => boolean;
+    canRedo: () => boolean;
 }
 
 export interface MarkerProps {
@@ -127,6 +135,17 @@ export interface MarkerOptions {
     showSaveNotification?: boolean;
     /** 로드 직후 활성화할 도구 (프리셋 id). 기본은 선택 모드 */
     defaultTool?: string;
+    /* ---- 1.6+ ---- */
+    /**
+     * 좌측 도구 막대와 브러시 설정 패널을 렌더링하지 않음. 호스트가 자체 도구 UI를 쓸 때.
+     * 도구 전환은 `setTool`, 브러시는 `getMaskSettings`/`setMaskSettings`/`newInstance`로 한다.
+     * 선택 도형 삭제(Delete)와 되돌리기 단축키는 그대로 동작한다.
+     */
+    hideToolbar?: boolean;
+    /** 되돌리기 단축키(Ctrl/⌘+Z, Ctrl/⌘+Shift+Z, Ctrl+Y)를 끔. 호스트가 직접 처리할 때 */
+    disableUndoShortcut?: boolean;
+    /** 되돌리기 이력 길이 (기본 50) */
+    historyLimit?: number;
 }
 
 const defaultOptions: MarkerOptions = {
@@ -165,6 +184,18 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
 
     const [globalLabelNameList, setGlobalLabelNameList] = useState<ClassInfo[] | undefined>(undefined);
 
+    /**
+     * 되돌리기 이력. 마크 목록 전체를 스냅샷으로 쌓고, 되돌릴 때는 저장 데이터를 다시 로드하는
+     * 경로(`pageLabelInfo`)를 그대로 쓴다. 도형·마스크가 같은 길로 복원되므로 타입별 처리가 없다.
+     * `restoring`은 복원 때문에 발생하는 변경을 이력에 다시 쌓지 않기 위한 표시다.
+     */
+    const history = useRef<{
+        past: LabelInfo[][][];
+        future: LabelInfo[][][];
+        current?: LabelInfo[][];
+        restoring: boolean;
+    }>({ past: [], future: [], restoring: false });
+
     const [saveNotificationOpen, setSaveNotificationOpen] = useState(false);
 
     const storage_key = LOCAL_STORAGE_KEY + fileUri;
@@ -200,6 +231,64 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
 
         return labelList;
     }
+
+    /** 마크 목록이 바뀔 때마다 이력에 쌓고 호스트에 알린다 */
+    const handleLabelsChange = () => {
+        const snapshot = getLabel(true);
+        const h = history.current;
+        if (h.restoring) {
+            h.restoring = false;
+        } else if (h.current) {
+            h.past.push(h.current);
+            const limit = combinedOption.historyLimit ?? 50;
+            if (h.past.length > limit) h.past.shift();
+            h.future = [];
+        }
+        h.current = snapshot;
+        callbacks.current.onChange?.(snapshot);
+    };
+
+    /** 저장 데이터 로드 경로로 되돌린다. 참조가 같으면 로드가 돌지 않으므로 항상 새 배열을 만든다 */
+    const restoreSnapshot = (next: LabelInfo[][]) => {
+        history.current.restoring = true;
+        history.current.current = next;
+        setLocalLabelInfo(next.map((page) => page.map((item) => ({ ...item }))));
+    };
+
+    const undo = () => {
+        const h = history.current;
+        if (combinedOption.readOnly || h.past.length === 0 || !h.current) return false;
+        h.future.push(h.current);
+        restoreSnapshot(h.past.pop() as LabelInfo[][]);
+        return true;
+    };
+
+    const redo = () => {
+        const h = history.current;
+        if (combinedOption.readOnly || h.future.length === 0 || !h.current) return false;
+        h.past.push(h.current);
+        restoreSnapshot(h.future.pop() as LabelInfo[][]);
+        return true;
+    };
+
+    useEffect(() => {
+        if (combinedOption.readOnly || combinedOption.disableUndoShortcut) return;
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+            const target = e.target as HTMLElement | null;
+            if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+            const key = e.key.toLowerCase();
+            if (key === 'z') {
+                e.preventDefault();
+                if (e.shiftKey) redo(); else undo();
+            } else if (key === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [combinedOption.readOnly, combinedOption.disableUndoShortcut]);
 
     const getMemo = () => {
         let memo = "";
@@ -316,6 +405,8 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
             setGlobalLabelNameList([]);
         }
 
+        // 다른 이미지·저장본을 받으면 되돌리기 이력도 새로 시작한다
+        history.current = { past: [], future: [], restoring: false };
         setLocalLabelInfo(combinedOption.savedLabelInfo);
         // options 객체 자체가 아니라 실제로 로드에 영향을 주는 필드만 감시한다.
         // (인라인 options 객체 때문에 매 렌더마다 라벨이 리로드되어 편집 중 도형이 사라지던 문제)
@@ -345,7 +436,11 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
         setMarkOrder: (id: string, order: number) => readOnlyRef.current ? undefined : providerState.current?.setMarkOrder(id, order),
         getMaskSettings: () => providerState.current?.getMaskSettings(),
         setMaskSettings: (patch: Partial<MaskSettings>) => providerState.current?.setMaskSettings(patch),
-        newInstance: () => readOnlyRef.current ? undefined : providerState.current?.newInstance()
+        newInstance: () => readOnlyRef.current ? undefined : providerState.current?.newInstance(),
+        undo,
+        redo,
+        canUndo: () => history.current.past.length > 0,
+        canRedo: () => history.current.future.length > 0
     } as MarkerState));
 
     if (globalLabelNameList)
@@ -361,7 +456,7 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                 withCredentials={combinedOption.withCredentials}
                 memo={memo}
                 targetRef={mapTargetRef}
-                onLabelsChange={() => callbacks.current.onChange?.(getLabel(true))}
+                onLabelsChange={handleLabelsChange}
                 onSelectedLabelChange={(label) => callbacks.current.onSelectedLabelChange?.(label)}
                 onSelectionChange={(features) => callbacks.current.onSelectionChange?.((features ?? []).map(f => String(f.getId())))}
             >
@@ -384,6 +479,7 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
                         <ToolNavigator
                             readOnly={combinedOption.readOnly}
                             pageLabelInfo={localLabelInfo}
+                            hideToolbar={combinedOption.hideToolbar}
                             fitPoint={combinedOption.fitPoint}
                             modifyOnly={combinedOption.modifyOnly}
                             toolRequest={toolRequest}

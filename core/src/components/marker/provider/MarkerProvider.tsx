@@ -387,6 +387,20 @@ function MapProvider({ fileUri, fileBlob, children, axiosInstance, labelNameList
             layers.insertAt(0, sourceData.layer);
             layers.insertAt(1, graticuleLayer);
             map.setView(sourceData.view);
+
+            // 리더가 만든 뷰는 고정 zoom이라 큰 화면에서 이미지가 작게 뜨고 여백만 남는다.
+            // 레이어 범위를 캔버스에 맞춰 처음 한 번 채운다 (크기를 아직 모르면 첫 렌더 뒤에).
+            const extent = sourceData.layer.getExtent();
+            if (extent) {
+                const fitToExtent = () => {
+                    const size = map.getSize();
+                    if (!size || !size[0] || !size[1]) return false;
+                    sourceData.view.fit(extent, { size, padding: [12, 12, 12, 12] });
+                    return true;
+                };
+                if (!fitToExtent()) map.once('postrender', () => { fitToExtent(); });
+            }
+
             if (!map.get(CONTEXT_MENU_BLOCKED)) {
                 map.getViewport().addEventListener('contextmenu', function (evt) {
                     evt.preventDefault();

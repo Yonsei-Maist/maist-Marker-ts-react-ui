@@ -42,6 +42,8 @@ enum Mode {
 
 export interface ToolNavigatorProps {
     pageLabelInfo?: LabelInfo[][];
+    /** 좌측 도구 막대와 브러시 설정 패널을 숨긴다 (호스트가 자체 도구 UI를 쓸 때) */
+    hideToolbar?: boolean;
     fitPoint: boolean;
     modifyOnly?: boolean;
     /** 호스트가 요청한 도구 ('' = 선택 모드). 값이 바뀔 때마다 적용된다. (1.4+) */
@@ -62,7 +64,7 @@ export interface ToolContext {
     toolType: string;
 }
 
-function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToolChange, readOnly = false }: ToolNavigatorProps) {
+function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToolChange, readOnly = false, hideToolbar = false }: ToolNavigatorProps) {
     const { map, isLoaded, findVectorLayer, findMainLayer } = useMap();
     const { pageLabelList, currentPageNo, initPageLabelList, selectedFeatures, setSelectedFeatures, labelNameList, addLabel, removeLabel, refreshLabels, selectedLabel } = useLabel();
     // 드로어(브러시·키포인트)가 현재 클래스를 읽을 수 있도록 맵에 실어 둔다
@@ -535,7 +537,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
     return (
         <>
         {
-            maskActive && maskSettings &&
+            maskActive && maskSettings && !hideToolbar &&
             <Box position={"absolute"} left={"75px"} top={"15px"} sx={{ background: "white", borderRadius: 1, p: 1.5, width: 190, boxShadow: 1 }}>
                 <Stack spacing={0.5}>
                     <ToggleButtonGroup size="small" exclusive value={maskSettings.mode} onChange={(_, v) => v && updateMask({ mode: v })}>
@@ -556,7 +558,7 @@ function ToolNavigator({ pageLabelInfo, fitPoint, modifyOnly, toolRequest, onToo
             </Box>
         }
         {
-            !readOnly &&
+            !readOnly && !hideToolbar &&
         <Box position={"absolute"} left={"15px"} top={"15px"}>
             <ToggleButtonGroup value={checkActive()} orientation='vertical' sx={{ background: "white" }}>
                 <ToggleButton value={Mode.Select} key={Mode.Select} onClick={() => { onModeButtonClickListener(Mode.Select); }}>
