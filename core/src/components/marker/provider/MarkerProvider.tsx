@@ -61,7 +61,7 @@ interface MapProviderProps {
     load: boolean;
     /** OpenLayers 맵을 마운트할 요소. 없으면 예전처럼 id="map" 요소를 찾는다. */
     targetRef?: React.RefObject<HTMLElement | null>;
-    onLabelsChange?: () => void;
+    onLabelsChange?: (origin: 'load' | 'edit') => void;
     onSelectedLabelChange?: (label?: ClassInfo) => void;
     onSelectionChange?: (features?: Feature[]) => void;
 };

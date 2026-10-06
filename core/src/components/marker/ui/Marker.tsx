@@ -233,12 +233,24 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
     }
 
     /** 마크 목록이 바뀔 때마다 이력에 쌓고 호스트에 알린다 */
-    const handleLabelsChange = () => {
+    /**
+     * 이력 규칙:
+     * - **사용자가 고친 변경(`edit`)만** 쌓는다. 저장 데이터를 불러온 것(`load`)은 기준선만 바꾼다.
+     *   불러오기까지 쌓으면 되돌리기가 "불러오기 전의 빈 화면"까지 내려가 저장된 마크가 사라진다.
+     * - 페이지가 없는 스냅샷(맵이 아직 준비되지 않았을 때)은 기록하지 않는다. 복원하면
+     *   "Saved label list and number of pages must be same"으로 편집기가 죽는다.
+     * - 내용이 같은 변경은 한 칸으로 친다 (선택만 바뀐 갱신 등).
+     */
+    const handleLabelsChange = (origin: 'load' | 'edit' = 'edit') => {
         const snapshot = getLabel(true);
         const h = history.current;
-        if (h.restoring) {
+        if (snapshot.length === 0) {
+            callbacks.current.onChange?.(snapshot);
+            return;
+        }
+        if (h.restoring || origin === 'load' || !h.current) {
             h.restoring = false;
-        } else if (h.current) {
+        } else if (JSON.stringify(h.current) !== JSON.stringify(snapshot)) {
             h.past.push(h.current);
             const limit = combinedOption.historyLimit ?? 50;
             if (h.past.length > limit) h.past.shift();
@@ -258,16 +270,20 @@ function Marker({ fileUri, fileBlob, axiosInstance, saveHandler, handleClassChan
     const undo = () => {
         const h = history.current;
         if (combinedOption.readOnly || h.past.length === 0 || !h.current) return false;
+        const prev = h.past.pop() as LabelInfo[][];
+        if (prev.length === 0) return false;
         h.future.push(h.current);
-        restoreSnapshot(h.past.pop() as LabelInfo[][]);
+        restoreSnapshot(prev);
         return true;
     };
 
     const redo = () => {
         const h = history.current;
         if (combinedOption.readOnly || h.future.length === 0 || !h.current) return false;
+        const next = h.future.pop() as LabelInfo[][];
+        if (next.length === 0) return false;
         h.past.push(h.current);
-        restoreSnapshot(h.future.pop() as LabelInfo[][]);
+        restoreSnapshot(next);
         return true;
     };
 

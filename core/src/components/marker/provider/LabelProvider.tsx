@@ -5,6 +5,8 @@ import { Feature } from "ol";
 import { LabelInfo } from "../ui";
 import { MARK } from "@/constants/tag";
 
+export type LabelChangeOrigin = 'load' | 'edit';
+
 export interface LabelProviderState {
     pageLabelList: Map<number, BaseMark[]>;
     labelNameList: ClassInfo[];
@@ -20,8 +22,11 @@ export interface LabelProviderState {
 interface LabelProviderProps {
     labelNameList: ClassInfo[];
     children?: React.ReactNode;
-    /** 마크 목록(추가·삭제·수정·라벨 변경)이 바뀔 때 (1.4+) */
-    onLabelsChange?: () => void;
+    /**
+     * 마크 목록(추가·삭제·수정·라벨 변경)이 바뀔 때 (1.4+).
+     * `origin`: 저장 데이터를 불러온 것인지(`load`) 사용자가 고친 것인지(`edit`). 되돌리기 이력은 `edit`만 쌓는다 (1.6+)
+     */
+    onLabelsChange?: (origin: LabelChangeOrigin) => void;
     /** 현재 클래스 선택이 바뀔 때 (1.4+) */
     onSelectedLabelChange?: (label?: ClassInfo) => void;
     /** 선택된 도형이 바뀔 때 (1.4+) */
@@ -44,6 +49,9 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
     // (없으면 클래스를 바꿔도 처음 선택한 클래스로 도형이 저장된다)
     const latest = useRef({ pageLabelList, currentPageNo, selectedLabel });
     latest.current = { pageLabelList, currentPageNo, selectedLabel };
+
+    // 마지막 목록 변경이 어디서 왔는지. 상태 갱신과 같은 틱에 적어 두고 변경 알림에서 읽는다.
+    const changeOrigin = useRef<LabelChangeOrigin>('load');
 
     function initPageLabelList(pages: number, pageLabelInfo?: LabelInfo[][], converter?: (label: LabelInfo) => BaseMark) {
         let localPageLabelList = pageLabelList
@@ -74,6 +82,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
             }
         }
 
+        changeOrigin.current = 'load';
         setPageLabelList(new Map(localPageLabelList));
     }
 
@@ -89,6 +98,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
             mark.feature?.set(MARK, mark);
         }
         pageLabelList.get(currentPageNo).push(mark);
+        changeOrigin.current = 'edit';
         setPageLabelList(new Map(pageLabelList));
     }
 
@@ -106,12 +116,14 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
         if (removeIdx > -1) {
             labelList.splice(removeIdx, 1);
             setSelectedFeatures(undefined);
+            changeOrigin.current = 'edit';
             setPageLabelList(new Map(pageLabelList));
         }
     }
 
     function refreshLabels() {
         // 함수형 갱신: 오래된 클로저(ToolNavigator의 ol 이벤트 핸들러)에서 호출해도 안전하다.
+        changeOrigin.current = 'edit';
         setPageLabelList(prev => new Map(prev));
     }
 
@@ -124,7 +136,7 @@ function LabelProvider({ labelNameList: originLabelNameList, children, onLabelsC
     }, [originLabelNameList]);
 
     useEffect(() => {
-        callbacks.current.onLabelsChange?.();
+        callbacks.current.onLabelsChange?.(changeOrigin.current);
     }, [pageLabelList]);
 
     useEffect(() => {
